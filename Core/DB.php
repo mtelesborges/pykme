@@ -9,7 +9,7 @@ class DB
     private string $dbName = "ahovonuf_pykme";
     public int $insert_id;
 
-    public function query($sql, $params, $close): array|int|string
+    public function query($sql, $params, $close)
     {
         /*
             $sql = Statement to execute;
@@ -87,7 +87,6 @@ class DB
     {
         // Connect to databe and return dbObject
         $db = new mysqli($this->dbHost, $this->dbUser, $this->dbPass, $this->dbName);
-
 
         // Check connection
         if ($db->connect_error) {

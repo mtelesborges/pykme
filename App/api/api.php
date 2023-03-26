@@ -2,17 +2,218 @@
 
 use Firebase\JWT\JWT;
 class api{
-    public $Core;
+    public Core $Core;
     public $secret = 'bGS6lzFqvvSQ8ALbOxatm7/Vk7mLGTFqaS34Q4oR1ew=';
     public $userId;
+
+    private const GET = 'GET';
+    private const POST = 'POST';
+    private const PUT = 'PUT';
+    private const TAXI = 'TAXI';
+    private const PACKAGE = 'PACKAGE';
+
     public function __construct($Core) {
         $this->Core = $Core;
     }
 
+    public function VIEW_deliveries() {
+
+        $db = $this->Core->getDB();
+
+        $lat = ($_GET["lat"] ?? 0.000000);
+        $lng = ($_GET["lng"] ?? 0.000000);
+
+        $sql = <<<SQL
+            /**
+             * https://www.movable-type.co.uk/scripts/latlong.html
+             * a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2)
+             * c = 2 ⋅ atan2( √a, √(1−a) )
+             * d = R ⋅ c
+             */
+            with cte_distance as (
+                with cte as (
+                    select
+                        o.id as order_id,
+                        s.id as shop_id,
+                        
+                        s.lat * 3.14/180 as driver_shop_q1,
+                        $lat * 3.14/180 as driver_shop_q2,
+                        ($lat - s.lat) * 3.14/180 driver_shop_d1,
+                        ($lng - s.lng) * 3.14/180 driver_shop_d2,
+            
+                        o.lat * 3.14/180 as order_shop_q1,
+                        s.lat * 3.14/180 as order_shop_q2,
+                        (s.lat - o.lat) * 3.14/180 order_shop_d1,
+                        (s.lng - o.lng) * 3.14/180 order_shop_d2
+                    from
+                                    orders 	o
+                        inner join 	shops 	s on s.id = o.shop_id
+                    where
+                        o.driver_id is null
+                        and 1=?
+                )
+                select
+                    *,
+                    atan2(sqrt(a_driver_shop), sqrt(1-a_driver_shop)) * 2 * 6371 as distance_driver_shop,
+                    atan2(sqrt(a_order_shop), sqrt(1-a_order_shop)) * 2 * 6371 as distance_order_shop,
+                    ((atan2(sqrt(a_driver_shop), sqrt(1-a_driver_shop)) * 2 * 6371) + (atan2(sqrt(a_order_shop), sqrt(1-a_order_shop)) * 2 * 6371)) as distance
+                from
+                    (select
+                        *,
+                        sin(driver_shop_d1/2) * sin(driver_shop_d1/2) + cos(driver_shop_q1) * cos(driver_shop_q2) * sin(driver_shop_d2/2) * sin(driver_shop_d2/2) as a_driver_shop,
+                        sin(order_shop_d1/2) * sin(order_shop_d1/2) + cos(order_shop_q1) * cos(order_shop_q2) * sin(order_shop_d2/2) * sin(order_shop_d2/2) as a_order_shop
+                    from 
+                        cte
+                    ) as a
+            ) select order_id, shop_id, distance_driver_shop, distance_order_shop, distance from cte_distance order by distance limit 20
+        SQL;
+
+        $deliveries = $db->query($sql, array("i", 1), false);
+
+        echo json_encode($deliveries);
+    }
+
+    public function VIEW_startDelivery() {
+        $method = $_SERVER['REQUEST_METHOD'];
+        $methodsAlloweds = [self::PUT];
+
+        if (!in_array($method, $methodsAlloweds)) {
+            http_response_code(405);
+            return;
+        }
+
+        $data = json_decode(file_get_contents('php://input'));
+
+        $driverId = $data["driver_id"];
+        $orderId = $data["order_id"];
+
+        if(empty($driverId)) {
+            http_response_code(422);
+            echo json_encode(["message" => "Driver is required."]);
+            return;
+        }
+
+        if(empty($orderId)) {
+            http_response_code(422);
+            echo json_encode(["message" => "Order is required."]);
+            return;
+        }
+
+        $db = $this->Core->getDB();
+
+        $sql = <<<SQL
+            update orders set driver_id = ?, delivery_stated_at = CURRENT_TIMESTAMP where id = ?
+        SQL;
+
+        $db->query($sql, array('ii', $driverId, $orderId));
+
+        http_response_code(204);
+    }
+
+
+    public function VIEW_finishDelivery() {
+        $method = $_SERVER['REQUEST_METHOD'];
+        $methodsAlloweds = [self::PUT];
+
+        if (!in_array($method, $methodsAlloweds)) {
+            http_response_code(405);
+            return;
+        }
+
+        $data = json_decode(file_get_contents('php://input'));
+
+        $driverId = $data["driver_id"];
+        $orderId = $data["order_id"];
+
+        if(empty($driverId)) {
+            http_response_code(422);
+            echo json_encode(["message" => "Driver is required."]);
+            return;
+        }
+
+        if(empty($orderId)) {
+            http_response_code(422);
+            echo json_encode(["message" => "Order is required."]);
+            return;
+        }
+
+        $db = $this->Core->getDB();
+
+        $sql = <<<SQL
+            update orders set driver_id = ?, delivery_finished_at = CURRENT_TIMESTAMP where id = ?
+        SQL;
+
+        $db->query($sql, array('ii', $driverId, $orderId));
+
+        http_response_code(204);
+    }
+
     public function VIEW_vehicles() {
         $db = $this->Core->getDB();
-        $vehicles = $db->query("SELECT * FROM vehicles WHERE 1=?", array("i", 1), false);
-        echo json_encode($vehicles, JSON_NUMERIC_CHECK);
+
+        $method = $_SERVER['REQUEST_METHOD'];
+        $methodsAlloweds = [self::GET, self::POST];
+
+        if (!in_array($method, $methodsAlloweds)) {
+            http_response_code(405);
+            return;
+        }
+
+        if ($method == self::GET) {
+            $vehicles = $db->query("SELECT * FROM vehicles WHERE 1=?", array("i", 1), false);
+            http_response_code(200);
+            echo json_encode($vehicles, JSON_NUMERIC_CHECK);
+            return;
+        }
+
+        $data = json_decode(file_get_contents('php://input'));
+
+        $driverId       = $data->driver_id       ?? null;
+        $type           = $data->type            ?? null;
+        $lat            = $data->lat             ?? 0;
+        $lng            = $data->lng             ?? 0;
+        $hasBag         = $data->has_bag         ?? 0;
+        $maxVolume      = $data->max_volume      ?? null;
+        $maxDistance    = $data->max_distance    ?? null;
+        $quantitySeat   = $data->quantity_seat   ?? null;
+
+        if (empty($driverId)) {
+            http_response_code(422);
+            echo json_encode(["message" => "Driver is required."]);
+            return;
+        }
+
+        if (!in_array($type, [self::TAXI, self::PACKAGE])) {
+            http_response_code(422);
+            echo json_encode(["message" => "Type should be TAXI or PACKAGE."]);
+            return;
+        }
+
+        $sql = <<<SQL
+            INSERT INTO vehicles (
+                driver_id,
+                type,
+                lat,
+                lng,
+                has_bag,
+                max_volume,
+                max_distance,
+                quantity_seat
+            ) values (
+                ?,
+                ?,
+                ?,
+                ?,
+                ?,
+                ?,
+                ?,
+                ?
+            )
+        SQL;
+
+        $id = $db->query($sql, array("iiiiiiii", $driverId, $type, $lat, $lng, $hasBag, $maxVolume, $maxDistance, $quantitySeat), true);
+        http_response_code(201);
+        echo json_encode(["id" => $id], JSON_NUMERIC_CHECK);
     }
 
     public function VIEW_vehiclesOptions() {
