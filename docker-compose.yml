@@ -1,0 +1,35 @@
+version: '3.7'
+
+services:
+  pykme-database:
+    container_name: pykme-database
+    image: mariadb:10.3
+    ports:
+      - 3306:3306
+    environment:
+      MARIADB_ROOT_PASSWORD: ichwerdeimmermitgottsein31@
+      MARIADB_DATABASE: ahovonuf_pykme
+      MARIADB_USER: ahovonuf_pykme
+      MARIADB_PASSWORD: ichwerdeimmermitgottsein31@
+    volumes:
+      - ./var/database/:/var/lib/mysql
+      - ./var/init/:/docker-entrypoint-initdb.d/
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u $$MARIADB_USER --password=$$MARIADB_PASSWORD
+      start_period: 5s
+      interval: 5s
+      timeout: 10s
+      retries: 55
+
+  pykme-server:
+    container_name: pykme-server
+    image: php:7.4-alpine
+    ports:
+      - 8000:8000
+    volumes:
+      - ./:/var/www/pykme
+    working_dir: /var/www/pykme
+    entrypoint: php -S 0.0.0.0:8000
+    depends_on:
+      - pykme-database
+

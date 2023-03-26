@@ -1,0 +1,21 @@
+	.select-wrapper span.caret{
+		color:white;
+	}
+	.select-wrapper input.select-dropdown{
+		border-bottom-color:white;
+		font-size: 30px;
+	}
+	.dropdown-content li > span {
+           font-size: 30px;
+        }
+	.select_home_option{
+		background:#fff;
+		color: #17c600;
+		width:auto;
+		float:right;
+		margin-top: 30px;
+	}
+	.select_home_option:hover{
+		color:#fff;
+	}
+	

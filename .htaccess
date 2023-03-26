@@ -1,0 +1,13 @@
+AddHandler application/x-httpd-php80 .php
+
+
+RewriteEngine On
+RewriteBase /
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+RewriteRule ^index.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !.(css|gif|ico|jpg|js|png|swf|txt|svg)$
+RewriteRule . /index.php [L]
+#@__HCP_END__@#
+# Anything after the comment above is left alone

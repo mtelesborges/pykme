@@ -1,0 +1,29 @@
+
+	.section{float:left;width: 100%}
+
+	#inhouseDeliveryOptions{
+		display:none;
+	}
+	h8{
+		padding-top:50px;
+		float: left;
+	}
+	#bankDetails{
+		display:none;
+	}
+	#paypal_field{
+		display:none;
+	}
+	.onlyProfessional{
+		color:#FF5D60;
+	}
+.modal { width: 100vw !important ; height: 100vh !important ; max-height: 100vh !important; top:0 !important;} 
+.closeBtn{
+		margin-top:25px;
+		border-radius: 100%;
+		width: 30px;
+		height: 30px;
+		background-color: transparent;
+		border:2px solid #F65E61;
+		color:#F65E61;
+	}
