@@ -18,6 +18,14 @@ class api{
 
     public function VIEW_deliveries() {
 
+        $method = $_SERVER['REQUEST_METHOD'];
+        $methodsAlloweds = [self::GET];
+
+        if (!in_array($method, $methodsAlloweds)) {
+            http_response_code(405);
+            return;
+        }
+
         $db = $this->Core->getDB();
 
         $lat = ($_GET["lat"] ?? 0.000000);
@@ -35,6 +43,8 @@ class api{
                     select
                         o.id as order_id,
                         s.id as shop_id,
+                        s.name as shop_name,
+                        (select count(1) from orders_products op where op.order_id= o.id) as quantity_product,
                         
                         s.lat * 3.14/180 as driver_shop_q1,
                         $lat * 3.14/180 as driver_shop_q2,
@@ -65,7 +75,7 @@ class api{
                     from 
                         cte
                     ) as a
-            ) select order_id, shop_id, distance_driver_shop, distance_order_shop, distance from cte_distance order by distance limit 20
+            ) select order_id, shop_id, shop_name, quantity_product, distance_driver_shop, distance_order_shop, distance from cte_distance order by distance limit 20
         SQL;
 
         $deliveries = $db->query($sql, array("i", 1), false);
@@ -148,6 +158,83 @@ class api{
         http_response_code(204);
     }
 
+    public function VIEW_drivers() {
+        $db = $this->Core->getDB();
+
+        $method = $_SERVER['REQUEST_METHOD'];
+        $methodsAlloweds = [self::GET, self::POST];
+
+        if (!in_array($method, $methodsAlloweds)) {
+            http_response_code(405);
+            return;
+        }
+
+        if ($method == self::GET) {
+            $vehicles = $db->query("SELECT * FROM drivers WHERE 1=?", array("i", 1), false);
+            http_response_code(200);
+            echo json_encode($vehicles, JSON_NUMERIC_CHECK);
+            return;
+        }
+
+        $data = json_decode(file_get_contents('php://input'));
+
+        $username       = $data->username       ?? null;
+        $name           = $data->name           ?? null;
+        $password       = $data->password       ?? null;
+
+        $user = $db->query("SELECT * FROM `user` WHERE username = ?", array('s', $username), false)[0];
+
+        if ($method == 'POST') {
+            if (empty($username)) {
+                http_response_code(422);
+                echo json_encode(["message" => "Username is required."]);
+                return;
+            }
+
+            if (empty($name)) {
+                http_response_code(422);
+                echo json_encode(["message" => "Name is required."]);
+                return;
+            }
+
+            if (empty($password) && empty($user)) {
+                http_response_code(422);
+                echo json_encode(["message" => "Password is required."]);
+                return;
+            }
+
+            if (!empty($user)) {
+                $userId = $user["id"];
+                $driver = $db->query("select * from drivers where user_id = ?", array('i', $userId), false)[0];
+
+                if(!empty($driver)) {
+                    http_response_code(422);
+                    echo json_encode(["message" => "Driver already exists."]);
+                    return;
+                }
+
+            } else {
+                $sql = <<<SQL
+                    INSERT INTO user(username, password, `join`) VALUES (?, ?, CURRENT_DATE);
+                SQL;
+                $db->query($sql, array('ss', $username, password_hash($password, PASSWORD_DEFAULT)), true);
+                $userId = $db->insert_id;
+            }
+
+            $sql = <<<SQL
+                INSERT INTO drivers (user_id, `name`) VALUES (?, ?);
+            SQL;
+
+            $db->query($sql, array('ss', $userId, $name), true);
+
+            http_response_code(201);
+            echo json_encode(["id" => $db->insert_id]);
+
+        }
+
+        // password_hash($pass_1, PASSWORD_DEFAULT)
+    }
+
     public function VIEW_vehicles() {
         $db = $this->Core->getDB();
 
@@ -211,9 +298,9 @@ class api{
             )
         SQL;
 
-        $id = $db->query($sql, array("iiiiiiii", $driverId, $type, $lat, $lng, $hasBag, $maxVolume, $maxDistance, $quantitySeat), true);
+        $db->query($sql, array("iiiiiiii", $driverId, $type, $lat, $lng, $hasBag, $maxVolume, $maxDistance, $quantitySeat), true);
         http_response_code(201);
-        echo json_encode(["id" => $id], JSON_NUMERIC_CHECK);
+        echo json_encode(["id" => $db->insert_id], JSON_NUMERIC_CHECK);
     }
 
     public function VIEW_vehiclesOptions() {
