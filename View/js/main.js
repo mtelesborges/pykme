@@ -36,7 +36,7 @@ function searchAddress(){
     }*/
     navigator.geolocation.getCurrentPosition((position) => {
         let lat = position.coords.latitude;
-        let long = position.coords.longitude;
-        window.location.href = `/search/address/?lat=${lat}&lng=${long}`;
+        let lng = position.coords.longitude;
+        window.location.href = `/search/address/?lat=${lat}&lng=${lng}`;
     });
 }

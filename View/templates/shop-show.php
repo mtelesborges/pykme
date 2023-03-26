@@ -58,8 +58,8 @@ $mode = "Delivery";
                             }
                             ?>
                             <?php
-                            foreach ($propeties as $propertie) { ?>
-                                <option value="<?php echo $propertie ?>" <?php if (in_array($propertie, $data["params"]["searchProperties"] ?? [])) { ?> selected <?php } ?> ><?php echo $Core->Translator->translate($propertie); ?></option>
+                            foreach ($propeties as $property) { ?>
+                                <option value="<?php echo $property ?>" <?php if (in_array($property, $data["params"]["searchProperties"] ?? [])) { ?> selected <?php } ?> ><?php echo $Core->Translator->translate($property); ?></option>
                             <?php } ?>
                         </select>
                     </div>

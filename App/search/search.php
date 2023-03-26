@@ -7,6 +7,21 @@ class search {
 
         $lat = $_GET["lat"] ?? 0;
         $lng = $_GET["lng"] ?? 0;
+        $searchProperties = $_GET["searchProperties"] ?? [];
+        $where = null;
+
+        if (!empty($searchProperties)) {
+            $where = "and id in (
+                select
+                    distinct
+                    shpc.shop_id
+                from
+                                shop_has_productCategory    shpc 
+                    inner join  productCategory             pc  on pc.id                    = shpc.productCategory_id
+                    inner join  productCategoryDescription  pcd on pcd.productCategory_id   = pc.id 
+                where
+                    pcd.id in (" . implode(",", $searchProperties) . "))";
+        }
 
         $sql = <<<SQL
             /**
@@ -27,6 +42,7 @@ class search {
                         shops
                     where
                          status != 'deleted'
+                         $where
                 )
                 select
                     *,
@@ -41,7 +57,39 @@ class search {
             ) select * from cte_distance limit 20
         SQL;
 
-        $shops = $db->query($sql, array("iii", $lat, $lat, $lng), false);
+        $shops = $db->query($sql, array("sss", $lat, $lat, $lng), false);
+
+        $sql = <<<SQL
+            select
+                distinct
+                pcd.id,
+                pcd.title
+            from
+                            shop_has_productCategory    shpc 
+                inner join  productCategory             pc  on pc.id                    = shpc.productCategory_id
+                inner join  productCategoryDescription  pcd on pcd.productCategory_id   = pc.id 
+            where
+                shpc.shop_id in (?)
+        SQL;
+
+        $categoryIds = implode("','", array_map(fn($shop) => $shop["id"], $shops));
+        $categories = $db->query($sql, array('s', $categoryIds), false);
+
+        if (empty($categories)) {
+            $sql = <<<SQL
+                select
+                    distinct
+                    pcd.id,
+                    pcd.title
+                from
+                                shop_has_productCategory    shpc 
+                    inner join  productCategory             pc  on pc.id                    = shpc.productCategory_id
+                    inner join  productCategoryDescription  pcd on pcd.productCategory_id   = pc.id 
+                where
+                    1=?
+            SQL;
+            $categories = $db->query($sql, array('s', 1), false);
+        }
 
         $view = [
             "File" 				=> "search.php",
@@ -56,10 +104,12 @@ class search {
                 $core->Translator->translate("Groceries"),
                 $core->Translator->translate("Free delivery Software"),
             ),
-            "Data"				=> $shops,
+            "Data"				=> ["shops" => $shops, "categories" => $categories, "lat" => $lat, "lng" => $lng, "searchProperties" => array_map(fn($id) => (int)$id, $searchProperties) ],
             "Core"				=> $this->Core
         ];
+
         $this->Core->FrontController->render($view);
+
     }
 
 }

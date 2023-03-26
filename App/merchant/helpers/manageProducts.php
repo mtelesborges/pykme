@@ -49,7 +49,7 @@ class manageProducts
                             php.product_id
                         from
                                         product_has_properties  php
-                            inner join 	productProperties 		pp 	on pp.id 			= php.property_id 
+                            inner join 	productProperties 		pp 	on pp.id 			= php.property_id
                         where
                             php.product_id = shp.product_id
                             and pp.name in (?)
@@ -77,12 +77,13 @@ class manageProducts
 
                 $arguments[] = "'" . implode("','", $allergiesName) . "'";
             }
+
             $sql = <<<SQL
                 $sql
                 ORDER BY position ASC
             SQL;
 
-            array_unshift($arguments, implode("", array_fill(0, sizeof($arguments), "i")));
+            array_unshift($arguments, implode("", array_fill(0, sizeof($arguments), "s")));
             $getProducts = $db->query($sql, $arguments, false);
         } else {
             $getProducts = $db->query("SELECT product_id,variation_id FROM shop_has_products WHERE shop_id=? AND productCategory_id=? AND status='active' ORDER BY position ASC", array("ii", $shopId, $catId), false);
