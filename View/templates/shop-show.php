@@ -632,8 +632,8 @@ $mode = "Delivery";
 
     function renderCart(cart) {
         const el = document.getElementById('cartItems');
-        const price = document.getElementById('price');
-        price.textContent = cart.map(item => (item.price ?? 0) * (item.quantity ?? 0)).reduce((a, b) => a + b, 0).toFixed(2);
+
+        updatePrice(cart)
 
         el.innerHTML = '';
 
@@ -667,11 +667,14 @@ $mode = "Delivery";
         const quantity = +el.value;
         cart[shopName].at(index).quantity = quantity;
         cart[shopName].at(index).price = +cart[shopName].at(index).unit_price * quantity;
-        const price = document.getElementById('price');
-        price.textContent = cart[shopName].map(item => (item.unit_price ?? 0) * (item.quantity ?? 0)).reduce((a, b) => a + b, 0).toFixed(2);
+        updatePrice(cart[shopName])
         localStorage.setItem(CART_KEY, JSON.stringify(cart));
     }
 
+    function updatePrice(cart) {
+        const price = document.getElementById('price');
+        price.textContent = cart.map(item => (item.unit_price ?? 0) * (item.quantity ?? 0)).reduce((a, b) => a + b, 0).toFixed(2);
+    }
 
     function removeOfCart(index) {
         document.getElementById(`cartItem-${index}`)?.remove();
@@ -681,6 +684,7 @@ $mode = "Delivery";
         cart = cart ? JSON.parse(cart) : {};
         cart[shopName] ??= [];
         cart[shopName].splice(index, 1);
+        updatePrice(cart[shopName])
         localStorage.setItem(CART_KEY, JSON.stringify(cart));
     }
 
