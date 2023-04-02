@@ -83,7 +83,7 @@ class manageProducts
                 ORDER BY position ASC
             SQL;
 
-            array_unshift($arguments, implode("", array_fill(0, sizeof($arguments), "s")));
+            array_unshift($arguments, implode("", array_map(fn($item) => is_numeric($item) ? "i" : "s", $arguments)));
             $getProducts = $db->query($sql, $arguments, false);
         } else {
             $getProducts = $db->query("SELECT product_id,variation_id FROM shop_has_products WHERE shop_id=? AND productCategory_id=? AND status='active' ORDER BY position ASC", array("ii", $shopId, $catId), false);

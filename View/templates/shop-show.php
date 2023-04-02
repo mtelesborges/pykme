@@ -148,7 +148,7 @@ $mode = "Delivery";
                 </h6>
             </div>
             <div class="col s12 sidebarShop">
-                <h6><i class="material-icons left">shopping_cart</i><?php echo $Core->Translator->translate("Cart"); ?></h6>
+                <h6><i class="material-icons left">shopping_cart</i><span style="display: flex; justify-content: space-between"><?php echo $Core->Translator->translate("Cart"); ?> <span id="price"></span></span></h6>
                 <ul id="cartItems">
                     <li style="display: flex; align-items: flex-end; justify-content: space-between; width: 100%">
                         <div style="display: flex; align-items: flex-end">
@@ -441,7 +441,7 @@ $mode = "Delivery";
             disableDefaultUI: true,
             mapTypeId: google.maps.MapTypeId.ROADMAP
         });
-
+        console.log('[lat]', <?php echo $Core->Tracker->lat ?>);
         // directions settings
         var waypts = [];
         waypts.push({
@@ -604,7 +604,7 @@ $mode = "Delivery";
         container: undefined, // ex. 'body' will append picker to body
     });*/
 
-    function addToCart(id, title) {
+    function addToCart(id, title, price) {
 
         const CART_KEY = 'cart'
 
@@ -620,6 +620,8 @@ $mode = "Delivery";
             id,
             quantity: 1,
             title,
+            unit_price: +price,
+            price: +price,
             index: cart[shopName].length
         });
 
@@ -630,6 +632,8 @@ $mode = "Delivery";
 
     function renderCart(cart) {
         const el = document.getElementById('cartItems');
+        const price = document.getElementById('price');
+        price.textContent = cart.map(item => (item.price ?? 0) * (item.quantity ?? 0)).reduce((a, b) => a + b, 0).toFixed(2);
 
         el.innerHTML = '';
 
@@ -662,6 +666,9 @@ $mode = "Delivery";
         cart[shopName] ??= [];
         const quantity = +el.value;
         cart[shopName].at(index).quantity = quantity;
+        cart[shopName].at(index).price = +cart[shopName].at(index).unit_price * quantity;
+        const price = document.getElementById('price');
+        price.textContent = cart[shopName].map(item => (item.unit_price ?? 0) * (item.quantity ?? 0)).reduce((a, b) => a + b, 0).toFixed(2);
         localStorage.setItem(CART_KEY, JSON.stringify(cart));
     }
 

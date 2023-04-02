@@ -64,7 +64,7 @@ class merchant
                 INNER JOIN  user        T3 ON T3.id = T1.user_id
                 INNER JOIN  currency    T4 ON T4.id = T1.currency_id
             WHERE
-                merchant_id =?
+                T1.shop_id in (select shop_id from shops where merchant_id =?)
             ORDER BY
                 id DESC
         SQL;
@@ -100,7 +100,7 @@ class merchant
                 INNER JOIN  user        T3 ON T3.id = T1.user_id
                 INNER JOIN  currency    T4 ON T4.id = T1.currency_id
             WHERE
-                    T1.merchant_id =?
+                    T1.shop_id in (select shop_id from shops where merchant_id =?)
                 AND T1.id =?
             ORDER BY
                 id DESC
@@ -118,7 +118,7 @@ class merchant
                             orders_products T1
                 INNER JOIN  orders          T2 ON T2.id = T1.order_id
             WHERE
-                T2.merchant_id =? AND
+                T2.shop_id in (select shop_id from shops where merchant_id =?) AND
                 T1.order_id =?
             ORDER BY id ASC
         SQL;
@@ -143,6 +143,21 @@ class merchant
                 where
                     T1.orders_products_id = ?
             SQL;
+
+            $query = <<<SQL
+                select
+                    pobd.title  as bundle_title,
+                    pod.title   as option_title
+                from
+                                    orders_products_options         opo
+                    inner   join    productOption                   po      on po.id                    = opo.product_option_id 
+                    left    join    productOption_has_pob           pohp    on pohp.productOption_id    = opo.product_option_id 
+                    left    join    productOptionBundleDescription  pobd    on pobd.pob_id              = pohp.pob_id 
+                    inner   join    productOptionDescription        pod     on pod.productOption_id     = po.id
+                where
+                    opo.orders_products_id = ?
+            SQL;
+
 
             $items = $db->query($query, array("i", $product["id"]), false);
             $options = [];
@@ -196,9 +211,28 @@ class merchant
 
     public function VIEW_balance(): void
     {
-
         $this->hasToBeLoggedIn();
-        $this->renderBalance();
+
+        $query = <<<SQL
+            select
+                o.shop_id,
+                s.name as shop_name,
+                sum(op.amount) * 0.02 + 0.5 as amount,
+                sum(op.quantity) as quantity
+            from
+                            orders 			o
+                inner join 	orders_products op  on op.order_id  = o.id
+                inner join  shops           s   on s.id         = o.shop_id
+            where
+                s.merchant_id = ?
+            group by
+                o.shop_id
+        SQL;
+
+        $db = $this->Core->getDB();
+        $balance = $db->query($query, array("i", $_SESSION["merchant"]["merchantId"]), false);
+        $data = ["balance" => $balance];
+        $this->renderBalance($data);
     }
 
     public function VIEW_registerProduct(): void
@@ -211,7 +245,7 @@ class merchant
         }
     }
 
-    public function VIEW_showOrderOptions(): null
+    public function VIEW_showOrderOptions()
     {
         $this->hasToBeLoggedIn();
         require_once("helpers/manageProducts.php");
@@ -224,7 +258,7 @@ class merchant
         return $this->Core->FrontController->partialRender("product-order-options.php", $data);
     }
 
-    public function VIEW_showTransportation(): null
+    public function VIEW_showTransportation()
     {
         $this->hasToBeLoggedIn();
         require_once("helpers/manageProducts.php");
@@ -238,7 +272,7 @@ class merchant
     }
 
 
-    public function VIEW_createProductRestriction(): null
+    public function VIEW_createProductRestriction()
     {
         $this->hasToBeLoggedIn();
         require_once("helpers/manageProducts.php");
