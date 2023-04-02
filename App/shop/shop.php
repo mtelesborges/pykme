@@ -198,7 +198,7 @@ class shop{
                                                     ),
                 "Data"				=> $data,
                 "Core"				=> $this->Core,
-                "Message"			=> $msg
+                "Message"			=> null
         ];
         $this->Core->FrontController->render($view);    
     }

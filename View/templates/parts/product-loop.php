@@ -25,7 +25,7 @@ if($_POST){
                 <div class="gridProducts">
                 <?php foreach ($c["products"] as $product){
                    ?>
-                    <div class="products hoverable" onclick="addToCart(<?php echo $product["id"] ?>)">
+                    <div class="products hoverable" onclick="addToCart(<?php echo $product["default"]["Info"]["id"] ?>, '<?php echo $product["default"]["Description"]["title"] ?>')">
                         <div class="contentProducts">
                             <h6><?php echo $product["default"]["Description"]["title"];?></h6>
                             <p class="pykmegreen">
@@ -139,5 +139,7 @@ $(document).ready(function(){
     $('.carousel.carousel-slider').carousel({
     fullWidth: true
   });
- }); 
+ });
+
+
 </script>

@@ -86,7 +86,7 @@ $mode = "Delivery";
                     <div class="input-field col m2 s12">
                         <select id="tranportationType" name="tranportationType">
                             <?php
-                            if ($shop["info"]["noDelivery"] == false) {
+                            if (!$shop["info"]["noDelivery"]) {
                                 ?>
                                 <option value="delivery" <?php if ($data["params"]["tranportationType"] == "delivery") { ?> selected <?php } ?>><?php echo $Core->Translator->translate("Delivery"); ?></option>
                                 <?php
@@ -148,8 +148,19 @@ $mode = "Delivery";
                 </h6>
             </div>
             <div class="col s12 sidebarShop">
-                <h6><i class="material-icons left">shopping_cart</i><?php echo $Core->Translator->translate("Cart"); ?>
-                </h6>
+                <h6><i class="material-icons left">shopping_cart</i><?php echo $Core->Translator->translate("Cart"); ?></h6>
+                <ul id="cartItems">
+                    <li style="display: flex; align-items: flex-end; justify-content: space-between; width: 100%">
+                        <div style="display: flex; align-items: flex-end">
+                            <div style="width: 2rem; margin-right: 1em;">
+                                <input value="1" type="number" min="1">
+                            </div>
+                            <span>Cart item</span>
+                        </div>
+                        <button class="btn"><i class="material-icons">delete</i></button>
+                    </li>
+                </ul>
+                <strong></strong>
             </div>
         </div>
     </div>
@@ -570,7 +581,7 @@ $mode = "Delivery";
 
     }
 
-    $('.timepicker').timepicker({
+    /*$('.timepicker').timepicker({
         default: 'now', // Set default time: 'now', '1:30AM', '16:30'
         fromnow: 0,       // set default time to * milliseconds from now (using with default = 'now')
         twelvehour: false, // Use AM/PM or 24-hour format
@@ -591,12 +602,89 @@ $mode = "Delivery";
         close: '<?php echo $Core->Translator->translate("Ok");?>',
         closeOnSelect: false, // Close upon selecting a date,
         container: undefined, // ex. 'body' will append picker to body
-    });
+    });*/
 
-    function addToCart(id) {
-        alert(id)
+    function addToCart(id, title) {
+
+        const CART_KEY = 'cart'
+
+        const shopName = '<?php echo $shop["info"]["name"]; ?>';
+
+        let cart = localStorage.getItem(CART_KEY);
+
+        cart = cart ? JSON.parse(cart) : {};
+
+        cart[shopName] ??= [];
+
+        cart[shopName].push({
+            id,
+            quantity: 1,
+            title,
+            index: cart[shopName].length
+        });
+
+        localStorage.setItem(CART_KEY, JSON.stringify(cart));
+
+        renderCart(cart[shopName]);
     }
 
+    function renderCart(cart) {
+        const el = document.getElementById('cartItems');
+
+        el.innerHTML = '';
+
+        cart.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.style.display = "flex";
+            li.style.alignItems = "flex-end";
+            li.style.justifyContent = "space-between";
+            li.style.width = "100%";
+            li.id = `cartItem-${index}`
+
+            li.innerHTML = `
+                <div style="display: flex; align-items: flex-end">
+                    <div style="width: 2rem; margin-right: 1em;">
+                        <input value="${item.quantity}" type="number" min="1" onchange="addQuantity(this, ${index})">
+                    </div>
+                    <span>${item.title}</span>
+                </div>
+                <button class="btn" onclick="removeOfCart(${index})"><i class="material-icons">delete</i></button>
+            `;
+            el.appendChild(li);
+        })
+    }
+
+    function addQuantity(el, index) {
+        const CART_KEY = 'cart'
+        let cart = localStorage.getItem(CART_KEY);
+        const shopName = '<?php echo $shop["info"]["name"]; ?>';
+        cart = cart ? JSON.parse(cart) : {};
+        cart[shopName] ??= [];
+        const quantity = +el.value;
+        cart[shopName].at(index).quantity = quantity;
+        localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    }
+
+
+    function removeOfCart(index) {
+        document.getElementById(`cartItem-${index}`)?.remove();
+        const CART_KEY = 'cart'
+        const shopName = '<?php echo $shop["info"]["name"]; ?>';
+        let cart = localStorage.getItem(CART_KEY);
+        cart = cart ? JSON.parse(cart) : {};
+        cart[shopName] ??= [];
+        cart[shopName].splice(index, 1);
+        localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    }
+
+    (function initCart() {
+        const CART_KEY = 'cart'
+        let cart = localStorage.getItem(CART_KEY);
+        const shopName = '<?php echo $shop["info"]["name"]; ?>';
+        cart = cart ? JSON.parse(cart) : {};
+        cart[shopName] ??= [];
+        renderCart(cart[shopName]);
+    })();
+
 </script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC00WRtBgVw_2E2zJM0EwR9uiyW6uZ03bM&callback=initMap"
-        async></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC00WRtBgVw_2E2zJM0EwR9uiyW6uZ03bM&callback=initMap" async></script>
