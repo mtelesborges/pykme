@@ -19,8 +19,14 @@ if(!empty($data["productCategories"])){
         <div class="col s12 valign-wrapper">
         <div class="col s1">
             <p>
-            
-            <input type="checkbox" id="productCategory_<?php echo $pc["info"]["id"]?>" data-category-id="<?php echo $pc["info"]["id"]?>" name="category[]" value="<?php echo $pc["info"]["id"]?>" onClick="categoryClicked(<?php echo $pc["info"]["id"]?>)"/>
+            <input
+                type="checkbox"
+                id="productCategory_<?php echo $pc["info"]["id"]?>"
+                data-category-id="<?php echo $pc["info"]["id"]?>"
+                name="category[]" value="<?php echo $pc["info"]["id"]?>"
+                onClick="categoryClicked(<?php echo $pc["info"]["id"]?>)"
+                <?php if (in_array($pc["info"]["id"], array_map(fn($category) => $category["Info"]["id"], $data["WholeProduct"]["Categories"] ?? []))) echo "checked";?>
+            />
             <label for="productCategory_<?php echo $pc["info"]["id"]?>"></label>
             </p>
         </div>

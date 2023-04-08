@@ -29,7 +29,7 @@ if($_POST){
                         <div class="contentProducts">
                             <h6><?php echo $product["default"]["Description"]["title"];?></h6>
                             <p class="pykmegreen">
-                                <?php if(count($product["default"]["Prices"]) == 1){
+                                <?php if(count($product["default"]["Prices"] ?? []) == 1){
 
                                     $productPrice = null;
 

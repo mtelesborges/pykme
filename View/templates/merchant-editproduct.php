@@ -11,7 +11,7 @@ $data["Core"] = $Core;
             <h3><?php echo $Core->Translator->translate("Edit Product"); ?></h3>
             <section id="productInfo" class="scrollspy section">
                 <h5 class="h5divider"><i class="material-icons left">info</i><?php echo $Core->Translator->translate("Basic Information");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
-                 <?php echo "<pre>";var_dump($data["WholeProduct"]);echo "</pre>";?>
+                 <?php echo "<pre>";echo json_encode($data["WholeProduct"]);echo "</pre>";?>
                 <div class="input-field col s12">
                     <select name="lang[]" id="infoLang">
                         <?php

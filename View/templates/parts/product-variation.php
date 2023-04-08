@@ -7,13 +7,9 @@ $languages = $Core->Translator->getLanguages();?>
         <select id="inputVariationLanguage" onchange="variationLanguage()">
             <?php 
             foreach($languages as $lang){
-                if($lang["code"] == $Core->Translator->lang){
-                    $default = true;
-                }else{
-                    $default = false;
-                }
+                $default = $lang["code"] == $Core->Translator->lang;
             ?>
-            <option value="<?php echo $lang["code"]?>" <?php if($default == true){ echo "selected";}?>><?php echo $Core->Translator->translate($lang["name"]);?></option>
+            <option value="<?php echo $lang["code"]?>" <?php if($default){ echo "selected";}?>><?php echo $Core->Translator->translate($lang["name"]);?></option>
             <?php
             }
             ?>
@@ -23,16 +19,11 @@ $languages = $Core->Translator->getLanguages();?>
     </div>
     <?php
     foreach ($languages as $lang){
-        if($lang["code"] == $Core->Translator->lang){
-            $default = true;
-        }else{
-            $default = false;
-        }
+        $default = $lang["code"] == $Core->Translator->lang;
     ?>
-    <div id="containerVariation_<?php echo $lang["code"]?>" class="containerVariations" <?php if($default == true){ echo"style='display:block'";}?>>
+    <div id="containerVariation_<?php echo $lang["code"]?>" class="containerVariations" <?php if($default){ echo"style='display:block'";}?>>
         <div class="col s12">
-            
-            <input id="inputVariationDefault_<?php echo $lang["code"]?>" type="radio" class="radioVariationDefault" <?php if($default == true){ echo"checked";}?> name="variationDefault" value="<?php echo $lang["code"]?>"/>
+            <input id="inputVariationDefault_<?php echo $lang["code"]?>" type="radio" class="radioVariationDefault" <?php if($default){ echo"checked";}?>name="variationDefault" value="<?php echo $lang["code"]?>"/>
             <label for="inputVariationDefault_<?php echo $lang["code"]?>"><span><?php echo $Core->Translator->translate("Default Language");?> <i class="material-icons tooltipped" data-position="bottom" data-delay="50" data-tooltip="<?php echo $Core->Translator->translate("Show in this language if selected language by the user is not translated");?>">help_outline</i></span>
             </label>    
         </div>
@@ -240,7 +231,7 @@ function addVariation(){
 $('.collapsible').collapsible();
 $('.tooltipped').tooltip();
 </script>
-<?php }else {?>
+<?php } else {?>
 <ul class="collection">
     <li class="collection-item avatar">
     <i class="material-icons circle yellow black-text">priority_high</i>
