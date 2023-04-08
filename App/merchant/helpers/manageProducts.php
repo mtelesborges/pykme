@@ -320,7 +320,7 @@ class manageProducts
         $getVehicles = $db->query("SELECT * FROM product_exclude_vehicles WHERE product_id=? AND status='active'", array("i", $pId), false);
         if (!empty($getVehicles)) {
             foreach ($getVehicles as $key => $v) {
-                $query = $db->query("SELECT * FROM vehicles WHERE id=? AND status='active'", array("i", $v["vehicle_id"]), false);
+                $query = $db->query("SELECT * FROM vehicles WHERE id=?", array("i", $v["vehicle_id"]), false);
                 if (!empty($query)) {
                     $restrictions[$key]["Info"] = $v;
                     $restrictions[$key] = $query[0];
@@ -736,414 +736,350 @@ class manageProducts
     public function registerProduct()
     {
 
-
         $product = json_decode($_POST["product"]);
-        if (!empty($product)) {
-            $db = $this->Core->getDB();;
+        if (empty($product)) {
+            header("Location:/merchant/products");
+            die();
+        }
+        $db = $this->Core->getDB();
 
-            if ($product->Options == false) {
-                $has_options = 0;
-            } else {
-                $has_options = 1;
+        $has_options        = $product->Options                 ? 1 : 0;
+        $has_orderOptions   = $product->OrderOptions            ? 1 : 0;
+        $has_conditions     = !empty($product->PriceConditions) ? 1 : 0;
+        $has_properties     = !empty($product->BasicInformation->typeInformation->properties)   ? 1 : 0;
+        $has_allergic       = $product->BasicInformation->typeInformation->noAllergies          ? 1 : 0;
+
+        $vehicles           = $db->query("SELECT id FROM vehicles WHERE 1=?", array("s", 1), false);
+        $nVehicles          = count($vehicles[0]);
+
+        $exclude_vehicles   = $nVehicles != count($product->RestrictionVehicles)    ? 1 : 0;
+        $has_restrictions   = !empty($product->Restrictions)                        ? 1 : 0;
+        $has_equipment      = !empty($product->RestrictionEquipment)                ? 1 : 0;
+        $has_img            = !empty($product->Images)                              ? 1 : 0;
+        $has_transport      = $product->Transportation                              ? 1 : 0;
+        $has_variations     = !empty($product->Variations)                          ? 1 : 0;
+        $has_expiry         = !empty($product->ExpiryDates)                         ? 1 : 0;
+        $has_crossselling   = !empty($product->CrossSelling)                        ? 1 : 0;
+
+        $createdProduct = $db->query("INSERT INTO products VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,NOW(),NOW(),'pending')", array("iiiiiiiiiiiiiii",
+            $_SESSION["merchant"]["merchantId"],
+            $product->BasicInformation->typeInformation->type,
+            $has_options,
+            $has_properties,
+            $has_allergic,
+            $has_conditions,
+            $has_restrictions,
+            $has_img,
+            $has_transport,
+            $has_variations,
+            $has_orderOptions,
+            $has_expiry,
+            $has_equipment,
+            $exclude_vehicles,
+            $has_crossselling
+        ), true);
+        $pId = $db->insert_id;
+
+        if ($createdProduct) {
+            /////////////////////////////////////////////////////////////////
+            // BASIC INFORMATION
+            /////////////////////////////////////////////////////////////////
+            // description
+            $hasDescription = false;
+            foreach ($product->BasicInformation->descriptions as $d) {
+                if ($db->query("INSERT INTO productDescription VALUES(0,?,?,?,?,?,NOW(),NOW(),'active')", array("iissi", $pId, $d->lang_id, $d->name, $d->description, intval($d->isDefault)), true)) {
+                    $hasDescription = true;
+                }
             }
-
-            if ($product->OrderOptions == false) {
-                $has_orderOptions = 0;
-            } else {
-                $has_orderOptions = 1;
-            }
-
-            if (empty($product->BasicInformation->typeInformation->properties)) {
-                $has_properties = 0;
-            } else {
-                $has_properties = 1;
-            }
-
-            if ($product->BasicInformation->typeInformation->noAllergies == false) {
-                $has_allergic = 1;
-            } else {
-                $has_allergic = 0;
-            }
-
-            if (empty($product->PriceConditions)) {
-                $has_conditions = 0;
-            } else {
-                $has_conditions = 1;
-            }
-
-
-            $vehicles = $db->query("SELECT id FROM vehicles WHERE status=?", array("s", "active"), false);
-            $nVehicles = count($vehicles[0]);
-            if ($nVehicles == count($product->RestrictionVehicles)) {
-                $exclude_vehicles = 0;
-            } else {
-                $exclude_vehicles = 1;
-            }
-            if (empty($product->Restrictions)) {
-                $has_restrictions = 0;
-            } else {
-                $has_restrictions = 1;
-            }
-
-            if (empty($product->RestrictionEquipment)) {
-                $has_equipment = 0;
-            } else {
-                $has_equipment = 1;
-            }
-
-            if (empty($product->Images)) {
-                $has_img = 0;
-            } else {
-                $has_img = 1;
-            }
-
-            if ($product->Transportation == false) {
-                $has_transport = 0;
-            } else {
-                $has_transport = 1;
-            }
-
-            if (empty($product->Variations)) {
-                $has_variations = 0;
-            } else {
-                $has_variations = 1;
-            }
-
-            if (empty($product->ExpiryDates)) {
-                $has_expiry = 0;
-            } else {
-                $has_expiry = 1;
-            }
-
-            if (empty($product->CrossSelling)) {
-                $has_crossselling = 0;
-            } else {
-                $has_crossselling = 1;
+            if (!$hasDescription) {
+                echo $Core->Translator->translate("No description");
+                die();
             }
 
 
-            $createdProduct = $db->query("INSERT INTO products VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,NOW(),NOW(),'pending')", array("iiiiiiiiiiiiiii",
-                $_SESSION["merchant"]["merchantId"],
-                $product->BasicInformation->typeInformation->type,
-                $has_options,
-                $has_properties,
-                $has_allergic,
-                $has_conditions,
-                $has_restrictions,
-                $has_img,
-                $has_transport,
-                $has_variations,
-                $has_orderOptions,
-                $has_expiry,
-                $has_equipment,
-                $exclude_vehicles,
-                $has_crossselling
-            ), true);
-            $pId = $db->insert_id;
+            //productAdditionalInfo
+            if (isset($product->BasicInformation->typeInformation) && ($product->BasicInformation->typeInformation->type == 1 || $product->BasicInformation->typeInformation->type == 2 || $product->BasicInformation->typeInformation->type == 3)) {
+                // exclude type "others" id=4
 
-            if ($createdProduct) {
-                /////////////////////////////////////////////////////////////////
-                // BASIC INFORMATION
-                /////////////////////////////////////////////////////////////////
-                // description
-                $hasDescription = false;
-                foreach ($product->BasicInformation->descriptions as $d) {
-                    if ($db->query("INSERT INTO productDescription VALUES(0,?,?,?,?,?,NOW(),NOW(),'active')", array("iissi", $pId, $d->lang_id, $d->name, $d->description, intval($d->isDefault)), true)) {
-                        $hasDescription = true;
+                //allergies
+                if ($has_allergic) {
+                    var_dump($product->BasicInformation->typeInformation);
+                    foreach ($product->BasicInformation->typeInformation->allergies as $id) {
+                        $db->query("INSERT INTO product_has_allergies VALUES (0,?,?,NOW(),NOW(),'active')", array("ii", $pId, $id), true);
                     }
                 }
-                if ($hasDescription == false) {
-                    echo $Core->Translator->translate("No description");
-                    die();
+                //propeties
+                if ($has_properties) {
+                    foreach ($product->BasicInformation->typeInformation->properties as $proId) {
+                        $db->query("INSERT INTO product_has_properties VALUES (0,?,?,NOW(),NOW(),'active')", array("ii", $pId, $proId), true);
+                    }
                 }
 
 
-                //productAdditionalInfo
-                if (isset($product->BasicInformation->typeInformation) && ($product->BasicInformation->typeInformation->type == 1 || $product->BasicInformation->typeInformation->type == 2 || $product->BasicInformation->typeInformation->type == 3)) {
-                    // exclude type "others" id=4
+                $addInfo = $product->BasicInformation->typeInformation;
+                //clean object
+                unset($addInfo->properties);
+                unset($addInfo->noAllergies);
+                unset($addInfo->allergies);
+                $object = serialize($addInfo);
+                $db->query("INSERT INTO productAdditionalInfo VALUES (0,?,?,NOW(),NOW(),'active')", array("is", $pId, $object), true);
+            }
 
-                    //allergies
-                    if ($has_allergic == true) {
-                        var_dump($product->BasicInformation->typeInformation);
-                        foreach ($product->BasicInformation->typeInformation->allergies as $id) {
-                            $db->query("INSERT INTO product_has_allergies VALUES (0,?,?,NOW(),NOW(),'active')", array("ii", $pId, $id), true);
-                        }
+
+            /////////////////////////////////////////////////////////////////
+            // SHOP CATEGORY
+            /////////////////////////////////////////////////////////////////
+            $has_category = false;
+            foreach ($product->ShopCategories as $c) {
+                $cId = $c->catId;
+                foreach ($c->hasShops as $shopId) {
+                    // get product position in category
+                    $position = $db->query("SELECT position FROM shop_has_products WHERE shop_id=? AND productCategory_id=? AND status !='deleted' ORDER BY id DESC LIMIT 1", array("ii", $shopId, $cId), false);
+                    if (empty($position[0])) {
+                        $pos = 0;
+                    } else {
+                        $pos = $position[0]["position"];
                     }
-                    //propeties
-                    if ($has_properties) {
-                        foreach ($product->BasicInformation->typeInformation->properties as $proId) {
-                            $db->query("INSERT INTO product_has_properties VALUES (0,?,?,NOW(),NOW(),'active')", array("ii", $pId, $proId), true);
-                        }
+                    $newPosition = $pos + 1;
+
+                    if ($db->query("INSERT INTO shop_has_products VALUES (0,?,0,?,?,?,NOW(),NOW(),'active')", array("iiii", $pId, $shopId, $cId, $newPosition), true)) {
+                        $has_category = true;
                     }
-
-
-                    $addInfo = $product->BasicInformation->typeInformation;
-                    //clean object
-                    unset($addInfo->properties);
-                    unset($addInfo->noAllergies);
-                    unset($addInfo->allergies);
-                    $object = serialize($addInfo);
-                    $db->query("INSERT INTO productAdditionalInfo VALUES (0,?,?,NOW(),NOW(),'active')", array("is", $pId, $object), true);
-                }
-
-
-                /////////////////////////////////////////////////////////////////
-                // SHOP CATEGORY
-                /////////////////////////////////////////////////////////////////
-                $has_category = false;
-                foreach ($product->ShopCategories as $c) {
-                    $cId = $c->catId;
-                    foreach ($c->hasShops as $shopId) {
-                        // get product position in category
-                        $position = $db->query("SELECT position FROM shop_has_products WHERE shop_id=? AND productCategory_id=? AND status !='deleted' ORDER BY id DESC LIMIT 1", array("ii", $shopId, $cId), false);
-                        if (empty($position[0])) {
-                            $pos = 0;
-                        } else {
-                            $pos = $position[0]["position"];
-                        }
-                        $newPosition = $pos + 1;
-
-                        if ($db->query("INSERT INTO shop_has_products VALUES (0,?,0,?,?,?,NOW(),NOW(),'active')", array("iiii", $pId, $shopId, $cId, $newPosition), true)) {
-                            $has_category = true;
-                        }
-                        foreach ($product->Variations as $v) {
-                            foreach ($v->inShops as $VshopId) {
-                                if ($VshopId == $shopId) {
-                                    $newPosition = 0;
-                                    $db->query("INSERT INTO shop_has_products VALUES (0,?,?,?,?,?,NOW(),NOW(),'active')", array("iiiii", $pId, $v->varId, $shopId, $cId, $newPosition), true);
-                                }
+                    foreach ($product->Variations as $v) {
+                        foreach ($v->inShops as $VshopId) {
+                            if ($VshopId == $shopId) {
+                                $newPosition = 0;
+                                $db->query("INSERT INTO shop_has_products VALUES (0,?,?,?,?,?,NOW(),NOW(),'active')", array("iiiii", $pId, $v->varId, $shopId, $cId, $newPosition), true);
                             }
                         }
+                    }
 
+                }
+            }
+            if ($has_category == false) {
+                die();
+            }
+            /////////////////////////////////////////////////////////////////
+            // VARIATIONS
+            /////////////////////////////////////////////////////////////////
+            if ($has_variations) {
+                foreach ($product->Variations as $v) {
+                    $varId = $v->varId;
+                    foreach ($v->inShops as $shopId) {
+                        $db->query("INSERT INTO product_has_variation VALUES(0,?,?,?,NOW(),NOW(),'active')", array("iii", $pId, $varId, $shopId), true);
                     }
                 }
-                if ($has_category == false) {
-                    die();
+            }
+
+            /////////////////////////////////////////////////////////////////
+            // TRANSPORTATION
+            /////////////////////////////////////////////////////////////////
+            if ($has_transport == true) {
+                // Save shop and variations with transport
+                foreach ($product->Transportation->transportationShops as $tranShop) {
+                    $shopId = $tranShop->shopId;
+                    foreach ($tranShop->variations as $v) {
+                        // default product has v->varId = 0
+                        $db->query("INSERT INTO product_has_shop_transport VALUES(0,?,?,?,?,?,NOW(),NOW(),'active')", array("iiiii", $pId, $shopId, $v->varId, intval($v->hasTransportation), intval($v->hasTransportOnly)), true);
+                    }
                 }
-                /////////////////////////////////////////////////////////////////
-                // VARIATIONS
-                /////////////////////////////////////////////////////////////////
-                if ($has_variations) {
-                    foreach ($product->Variations as $v) {
-                        $varId = $v->varId;
-                        foreach ($v->inShops as $shopId) {
-                            $db->query("INSERT INTO product_has_variation VALUES(0,?,?,?,NOW(),NOW(),'active')", array("iii", $pId, $varId, $shopId), true);
+                // save weight and dimensions
+                foreach ($product->Transportation->dimensions as $d) {
+                    // default product has varId = 0
+                    $db->query("INSERT INTO productPhysicalInfo VALUES(0,?,?,?,?,?,?,?,?,NOW(),NOW(),'active')", array("iidsddds", $pId, $d->varId, $d->weight, $d->weightSystem, $d->width, $d->height, $d->depth, $d->distanceSystem), true);
+                }
+            }
+
+            /////////////////////////////////////////////////////////////////
+            // PRODUCT OPTIONS
+            /////////////////////////////////////////////////////////////////
+            if ($has_options) {
+                foreach ($product->Options as $po) {
+                    $shopId = $po->shopId;
+                    $default = $po->options->optionsDefault;
+                    $variation = $po->options->optionsVariations;
+                    if (!empty($default)) {
+                        foreach ($default as $bundleId) {
+                            $varId = 0; // default product
+                            $db->query("INSERT INTO product_has_options VALUES(0,?,?,?,?,NOW(),NOW(),'active')", array("iiii", $pId, $varId, $shopId, $bundleId), true);
                         }
                     }
-                }
-
-                /////////////////////////////////////////////////////////////////
-                // TRANSPORTATION
-                /////////////////////////////////////////////////////////////////
-                if ($has_transport == true) {
-                    // Save shop and variations with transport
-                    foreach ($product->Transportation->transportationShops as $tranShop) {
-                        $shopId = $tranShop->shopId;
-                        foreach ($tranShop->variations as $v) {
-                            // default product has v->varId = 0
-                            $db->query("INSERT INTO product_has_shop_transport VALUES(0,?,?,?,?,?,NOW(),NOW(),'active')", array("iiiii", $pId, $shopId, $v->varId, intval($v->hasTransportation), intval($v->hasTransportOnly)), true);
-                        }
-                    }
-                    // save weight and dimensions
-                    foreach ($product->Transportation->dimensions as $d) {
-                        // default product has varId = 0
-                        $db->query("INSERT INTO productPhysicalInfo VALUES(0,?,?,?,?,?,?,?,?,NOW(),NOW(),'active')", array("iidsddds", $pId, $d->varId, $d->weight, $d->weightSystem, $d->width, $d->height, $d->depth, $d->distanceSystem), true);
-                    }
-                }
-
-                /////////////////////////////////////////////////////////////////
-                // PRODUCT OPTIONS
-                /////////////////////////////////////////////////////////////////
-                if ($has_options) {
-                    foreach ($product->Options as $po) {
-                        $shopId = $po->shopId;
-                        $default = $po->options->optionsDefault;
-                        $variation = $po->options->optionsVariations;
-                        if (!empty($default)) {
-                            foreach ($default as $bundleId) {
-                                $varId = 0; // default product
+                    if (!empty($variation)) {
+                        foreach ($variation as $vo) {
+                            $varId = $vo->varId;
+                            foreach ($vo->options as $bundleId) {
                                 $db->query("INSERT INTO product_has_options VALUES(0,?,?,?,?,NOW(),NOW(),'active')", array("iiii", $pId, $varId, $shopId, $bundleId), true);
                             }
                         }
-                        if (!empty($variation)) {
-                            foreach ($variation as $vo) {
-                                $varId = $vo->varId;
-                                foreach ($vo->options as $bundleId) {
-                                    $db->query("INSERT INTO product_has_options VALUES(0,?,?,?,?,NOW(),NOW(),'active')", array("iiii", $pId, $varId, $shopId, $bundleId), true);
+                    }
+
+                }
+            }
+            /////////////////////////////////////////////////////////////////
+            // PREPARATION TIME
+            /////////////////////////////////////////////////////////////////
+            if (isset($product->PreparationTime->preparationTime) && isset($product->PreparationTime->typePreparationTime)) {
+                $varId = 0;// default product
+                $db->query("INSERT INTO product_has_time VALUES(0,?,?,?,?,NOW(),NOW(),'active')", array("iiis", $pId, $varId, $product->PreparationTime->preparationTime, $product->PreparationTime->typePreparationTime), true);
+                if ($has_variations) {
+                    if (isset($product->PreparationTime->variations)) {
+                        foreach ($product->PreparationTime->variations as $v) {
+                            $db->query("INSERT INTO product_has_time VALUES(0,?,?,?,?,NOW(),NOW(),'active')", array("iiis", $pId, $v->variationId, $v->preparationTime, $v->typePreparationTime), true);
+                        }
+                    } else {
+                        die();
+                    }
+                }
+            } else {
+                die();
+            }
+
+
+            /////////////////////////////////////////////////////////////////
+            // PRICES & INVENTORY
+            /////////////////////////////////////////////////////////////////
+            foreach ($product->PricesAndInventory as $shop) {
+
+                $prices = $shop->prices;
+                $DefaultInventory = $shop->inventory;
+
+                // prices
+                foreach ($prices as $shopP) {
+                    $shopId = $shopP->shopId;
+                    //default product
+                    $varId = 0;
+                    if ($shopP->isDefault == true && empty($shopP->inStorePrice) && empty($shopP->deliveryPrice)) {
+                        die();
+                    } else {
+                        $db->query("INSERT INTO product_has_price VALUES (0,?,?,?,?,?,?,'',?,?,?,'',?,?,NOW(),NOW(),'active',0)", array("iiiiiddsdds", $pId, $varId, $shopP->currencyId, intval($shopP->isDefault), $shopId, $shopP->inStorePrice, $shopP->inStoreTax, $shopP->inStoreTaxType, $shopP->deliveryPrice, $shopP->deliveryTax, $shopP->deliveryTaxType), true);
+                    }
+
+
+                    //variations
+                    if (!empty($p->variations)) {
+                        foreach ($p->variations as $v) {
+                            $varId = $v->varId;
+
+                            //prices variations
+                            foreach ($v->prices as $shopP) {
+                                if ($shopP->IsDefault == true && empty($shopP->inStorePrice) && empty($shopP->deliveryPrice)) {
+                                    die();
+                                } else {
+                                    $db->query("INSERT INTO product_has_price VALUES (0,?,?,?,?,?,?,'',?,?,?,'',?,?,NOW(),NOW(),'active',0)", array("iiIiiddsdds", $pId, $varId, $shopP->currencyId, intval($shopP->isDefault), $shopId, $shopP->inStorePrice, $shopP->inStoreTax, $shopP->inStoreTaxType, $shopP->deliveryPrice, $shopP->deliveryTax, $shopP->deliveryTaxType), true);
                                 }
                             }
-                        }
 
-                    }
-                }
-                /////////////////////////////////////////////////////////////////
-                // PREPARATION TIME
-                /////////////////////////////////////////////////////////////////
-                if (isset($product->PreparationTime->preparationTime) && isset($product->PreparationTime->typePreparationTime)) {
-                    $varId = 0;// default product
-                    $db->query("INSERT INTO product_has_time VALUES(0,?,?,?,?,NOW(),NOW(),'active')", array("iiis", $pId, $varId, $product->PreparationTime->preparationTime, $product->PreparationTime->typePreparationTime), true);
-                    if ($has_variations) {
-                        if (isset($product->PreparationTime->variations)) {
-                            foreach ($product->PreparationTime->variations as $v) {
-                                $db->query("INSERT INTO product_has_time VALUES(0,?,?,?,?,NOW(),NOW(),'active')", array("iiis", $pId, $v->variationId, $v->preparationTime, $v->typePreparationTime), true);
+                            // inventory variations
+                            if ($i->type == "period") {
+                                $db->query("INSERT INTO product_has_inventory VALUES(0,?,?,?,?,?,?,?,?,?,NOW(),NOW(),'','active')", array("iiiisisi", $pId, $varId, $shopId, $i->amount, $i->type, $i->periodAmount, $i->period, $i->addToPrevious), true);
                             }
-                        } else {
-                            die();
-                        }
-                    }
-                } else {
-                    die();
-                }
+                            if ($i->type == "permanent") {
+                                $db->query("INSERT INTO product_has_inventory VALUES(0,?,?,0,?,?,?,?,?,?,NOW(),NOW(),'','active')", array("iiisisi", $pId, $varId, $shopId, $i->amount, $i->type, null, null, null), true);
 
-
-                /////////////////////////////////////////////////////////////////
-                // PRICES & INVENTORY
-                /////////////////////////////////////////////////////////////////
-                foreach ($product->PricesAndInventory as $shop) {
-
-                    $prices = $shop->prices;
-                    $DefaultInventory = $shop->inventory;
-
-                    // prices
-                    foreach ($prices as $shopP) {
-                        $shopId = $shopP->shopId;
-                        //default product
-                        $varId = 0;
-                        if ($shopP->isDefault == true && empty($shopP->inStorePrice) && empty($shopP->deliveryPrice)) {
-                            die();
-                        } else {
-                            $db->query("INSERT INTO product_has_price VALUES (0,?,?,?,?,?,?,'',?,?,?,'',?,?,NOW(),NOW(),'active',0)", array("iiiiiddsdds", $pId, $varId, $shopP->currencyId, intval($shopP->isDefault), $shopId, $shopP->inStorePrice, $shopP->inStoreTax, $shopP->inStoreTaxType, $shopP->deliveryPrice, $shopP->deliveryTax, $shopP->deliveryTaxType), true);
-                        }
-
-
-                        //variations
-                        if (!empty($p->variations)) {
-                            foreach ($p->variations as $v) {
-                                $varId = $v->varId;
-
-                                //prices variations
-                                foreach ($v->prices as $shopP) {
-                                    if ($shopP->IsDefault == true && empty($shopP->inStorePrice) && empty($shopP->deliveryPrice)) {
-                                        die();
-                                    } else {
-                                        $db->query("INSERT INTO product_has_price VALUES (0,?,?,?,?,?,?,'',?,?,?,'',?,?,NOW(),NOW(),'active',0)", array("iiIiiddsdds", $pId, $varId, $shopP->currencyId, intval($shopP->isDefault), $shopId, $shopP->inStorePrice, $shopP->inStoreTax, $shopP->inStoreTaxType, $shopP->deliveryPrice, $shopP->deliveryTax, $shopP->deliveryTaxType), true);
-                                    }
-                                }
-
-                                // inventory variations
-                                if ($i->type == "period") {
-                                    $db->query("INSERT INTO product_has_inventory VALUES(0,?,?,?,?,?,?,?,?,?,NOW(),NOW(),'','active')", array("iiiisisi", $pId, $varId, $shopId, $i->amount, $i->type, $i->periodAmount, $i->period, $i->addToPrevious), true);
-                                }
-                                if ($i->type == "permanent") {
-                                    $db->query("INSERT INTO product_has_inventory VALUES(0,?,?,0,?,?,?,?,?,?,NOW(),NOW(),'','active')", array("iiisisi", $pId, $varId, $shopId, $i->amount, $i->type, null, null, null), true);
-
-                                }
-                            }
-                        }
-
-                    }
-                    // inventory default
-                    if ($DefaultInventory != false) {
-                        $i = $DefaultInventory;
-                        $varId = 0;
-                        if ($i->type == "period") {
-                            $db->query("INSERT INTO product_has_inventory VALUES(0,?,?,?,?,?,?,?,?,NOW(),NOW(),'','active')", array("iiiisisi", $pId, $varId, $shopId, $i->amount, $i->type, $i->periodAmount, $i->period, $i->addToPrevious), true);
-                        }
-                        if ($i->type == "permanent") {
-                            $db->query("INSERT INTO product_has_inventory VALUES(0,?,?,?,?,?,NULL,NULL,NULL,NOW(),NOW(),'','active')", array("iiiis", $pId, $varId, $shopId, $i->amount, $i->type), true);
-                        }
-                    }
-
-                }
-                /////////////////////////////////////////////////////////////////
-                // ORDER OPTIONS
-                /////////////////////////////////////////////////////////////////
-                if ($has_orderOptions) {
-                    foreach ($product->OrderOptions as $o) {
-                        $shopId = $o->shopId;
-                        $varId = 0;
-                        $db->query("INSERT INTO product_has_orderOptions VALUES(0,?,?,?,?,?,NOW(),NOW(),'active')", array("iiiii", $pId, $varId, $shopId, $o->onlyCredit, $o->onlyCash), true);
-                        if (!empty($o->variations)) {
-                            foreach ($o->variations as $v) {
-                                $db->query("INSERT INTO product_has_orderOptions VALUES(0,?,?,?,?,?,NOW(),NOW(),'active')", array("iiiii", $pId, $v->varId, $shopId, $v->onlyCredit, $v->onlyCash), true);
                             }
                         }
                     }
-                }
 
-                /////////////////////////////////////////////////////////////////
-                // EXPIRY DATE
-                /////////////////////////////////////////////////////////////////
-                if ($has_expiry) {
-                    foreach ($product->ExpiryDates as $e) {
-                        if (!empty($e->inShops) && !empty($e->expiryDate) && !empty($e->expiryAmount)) {
-                            $db->query("INSERT INTO product_has_expiry VALUES(0,?,?,?,?,?,NOW(),NOW(),'active')", array("iiisi", $pId, $e->forVariations, $e->inShops, date("Y-m-d", strtotime($e->expiryDate)), $e->expiryAmount), true);
-                        }
+                }
+                // inventory default
+                if ($DefaultInventory != false) {
+                    $i = $DefaultInventory;
+                    $varId = 0;
+                    if ($i->type == "period") {
+                        $db->query("INSERT INTO product_has_inventory VALUES(0,?,?,?,?,?,?,?,?,NOW(),NOW(),'','active')", array("iiiisisi", $pId, $varId, $shopId, $i->amount, $i->type, $i->periodAmount, $i->period, $i->addToPrevious), true);
+                    }
+                    if ($i->type == "permanent") {
+                        $db->query("INSERT INTO product_has_inventory VALUES(0,?,?,?,?,?,NULL,NULL,NULL,NOW(),NOW(),'','active')", array("iiiis", $pId, $varId, $shopId, $i->amount, $i->type), true);
                     }
                 }
-
-                /////////////////////////////////////////////////////////////////
-                // PRICE CONDITIONS
-                /////////////////////////////////////////////////////////////////
-                if ($has_conditions) {
-                    foreach ($product->PriceConditions as $cId) {
-                        if (!empty($cId)) {
-                            $db->query("INSERT INTO product_has_conditions VALUES(0,?,?,NOW(),NOW(),'active')", array("ii", $pId, $cId), true);
-                        }
-                    }
-                }
-
-                /////////////////////////////////////////////////////////////////
-                // RESTRICTIONS
-                /////////////////////////////////////////////////////////////////
-                if ($has_restrictions) {
-                    if (!empty($product->Restrictions)) {
-                        foreach ($product->Restrictions as $r) {
-                            $db->query("INSERT INTO product_has_restrictions VALUES(0,?,?,NOW(),NOW(),'active')", array("ii", $pId, $r), true);
-                        }
-                    }
-                }
-
-                if ($has_equipment) {
-                    if (!empty($product->RestrictionEquipment)) {
-                        foreach ($product->RestrictionEquipment as $e) {
-                            if (!empty($e)) {
-                                $db->query("INSERT INTO product_has_equipment VALUES(0,?,?,NOW(),NOW(),'active')", array("ii", $pId, $e), true);
-                            }
-                        }
-                    }
-                }
-                if ($exclude_vehicles) {
-                    $exclude = array_diff(array_column($vehicles, "id"), $product->RestrictionVehicles);
-                    foreach ($exclude as $e) {
-                        $db->query("INSERT INTO product_exclude_vehicles VALUES(0,?,?,NOW(),NOW(),'active')", array("ii", $pId, $e), true);
-                    }
-                }
-                /////////////////////////////////////////////////////////////////
-                // RESTRICTIONS
-                /////////////////////////////////////////////////////////////////
-                if ($has_crossselling) {
-                    foreach ($product->CrossSelling as $cs) {
-                        $db->query("INSERT INTO product_has_crossselling VALUES(0,?,?,?,?,NOW(),NOW(),'active')", array("iiii", $pId, $cs->product, $cs->variation, $cs->shop), true);
-                    }
-                }
-                /////////////////////////////////////////////////////////////////
-                // PRODUCT IMAGES
-                /////////////////////////////////////////////////////////////////
-                if ($has_img) {
-                    foreach ($product->Images as $i) {
-                        $varId = $i->variation;
-                        foreach ($i->images as $img) {
-                            $db->query("INSERT INTO product_has_images VALUES(0,?,?,?,NOW(),NOW(),'active')", array("iis", $pId, $varId, $img), true);
-                        }
-                    }
-                }
-
-                // activate product
-                $db->query("UPDATE products SET status='active' WHERE id=?", array("i", $pId), true);
-
 
             }
+            /////////////////////////////////////////////////////////////////
+            // ORDER OPTIONS
+            /////////////////////////////////////////////////////////////////
+            if ($has_orderOptions) {
+                foreach ($product->OrderOptions as $o) {
+                    $shopId = $o->shopId;
+                    $varId = 0;
+                    $db->query("INSERT INTO product_has_orderOptions VALUES(0,?,?,?,?,?,NOW(),NOW(),'active')", array("iiiii", $pId, $varId, $shopId, $o->onlyCredit, $o->onlyCash), true);
+                    if (!empty($o->variations)) {
+                        foreach ($o->variations as $v) {
+                            $db->query("INSERT INTO product_has_orderOptions VALUES(0,?,?,?,?,?,NOW(),NOW(),'active')", array("iiiii", $pId, $v->varId, $shopId, $v->onlyCredit, $v->onlyCash), true);
+                        }
+                    }
+                }
+            }
+
+            /////////////////////////////////////////////////////////////////
+            // EXPIRY DATE
+            /////////////////////////////////////////////////////////////////
+            if ($has_expiry) {
+                foreach ($product->ExpiryDates as $e) {
+                    if (!empty($e->inShops) && !empty($e->expiryDate) && !empty($e->expiryAmount)) {
+                        $db->query("INSERT INTO product_has_expiry VALUES(0,?,?,?,?,?,NOW(),NOW(),'active')", array("iiisi", $pId, $e->forVariations, $e->inShops, date("Y-m-d", strtotime($e->expiryDate)), $e->expiryAmount), true);
+                    }
+                }
+            }
+
+            /////////////////////////////////////////////////////////////////
+            // PRICE CONDITIONS
+            /////////////////////////////////////////////////////////////////
+            if ($has_conditions) {
+                foreach ($product->PriceConditions as $cId) {
+                    if (!empty($cId)) {
+                        $db->query("INSERT INTO product_has_conditions VALUES(0,?,?,NOW(),NOW(),'active')", array("ii", $pId, $cId), true);
+                    }
+                }
+            }
+
+            /////////////////////////////////////////////////////////////////
+            // RESTRICTIONS
+            /////////////////////////////////////////////////////////////////
+            if ($has_restrictions) {
+                if (!empty($product->Restrictions)) {
+                    foreach ($product->Restrictions as $r) {
+                        $db->query("INSERT INTO product_has_restrictions VALUES(0,?,?,NOW(),NOW(),'active')", array("ii", $pId, $r), true);
+                    }
+                }
+            }
+
+            if ($has_equipment) {
+                if (!empty($product->RestrictionEquipment)) {
+                    foreach ($product->RestrictionEquipment as $e) {
+                        if (!empty($e)) {
+                            $db->query("INSERT INTO product_has_equipment VALUES(0,?,?,NOW(),NOW(),'active')", array("ii", $pId, $e), true);
+                        }
+                    }
+                }
+            }
+            if ($exclude_vehicles) {
+                $exclude = array_diff(array_column($vehicles, "id"), $product->RestrictionVehicles);
+                foreach ($exclude as $e) {
+                    $db->query("INSERT INTO product_exclude_vehicles VALUES(0,?,?,NOW(),NOW(),'active')", array("ii", $pId, $e), true);
+                }
+            }
+            /////////////////////////////////////////////////////////////////
+            // RESTRICTIONS
+            /////////////////////////////////////////////////////////////////
+            if ($has_crossselling) {
+                foreach ($product->CrossSelling as $cs) {
+                    $db->query("INSERT INTO product_has_crossselling VALUES(0,?,?,?,?,NOW(),NOW(),'active')", array("iiii", $pId, $cs->product, $cs->variation, $cs->shop), true);
+                }
+            }
+            /////////////////////////////////////////////////////////////////
+            // PRODUCT IMAGES
+            /////////////////////////////////////////////////////////////////
+            if ($has_img) {
+                foreach ($product->Images as $i) {
+                    $varId = $i->variation;
+                    foreach ($i->images as $img) {
+                        $db->query("INSERT INTO product_has_images VALUES(0,?,?,?,NOW(),NOW(),'active')", array("iis", $pId, $varId, $img), true);
+                    }
+                }
+            }
+
+            // activate product
+            $db->query("UPDATE products SET status='active' WHERE id=?", array("i", $pId), true);
 
         }
         header("Location:/merchant/products");
@@ -1731,7 +1667,7 @@ class manageProducts
     public function getVehicles()
     {
         $db = $this->Core->getDB();
-        return $db->query("SELECT * FROM vehicles WHERE status=?", array("s", "active"), false);
+        return $db->query("SELECT * FROM vehicles WHERE 1=?", array("i", 1), false);
     }
 
     public function getEquipment()
@@ -1761,7 +1697,7 @@ class manageProducts
 
         $restrictions["Transportation"] = $db->query("SELECT * FROM restriction_Transportation WHERE merchant_id=? AND status='active'", array("i", $mId), false);
 
-        $restrictions["Vehicle"] = $db->query("SELECT * FROM vehicles WHERE status=?", array("s", "active"), false);
+        $restrictions["Vehicle"] = $db->query("SELECT * FROM vehicles WHERE 1=?", array("i", 1), false);
 
         $restrictions["Size"] = $db->query("SELECT * FROM restriction_Size WHERE merchant_id=? AND status='active'", array("i", $mId), false);
 

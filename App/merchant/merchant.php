@@ -25,7 +25,7 @@ class merchant
         $data["productType"] = $p->getProductType();
         $data["foodAllergies"] = $p->getFoodAllergies();
         $data["productCategories"] = $p->getProductCategories();
-        $data["restrictions"] = $p->getAllRestrictions();//category restrictions
+        $data["restrictions"] = []; //$p->getAllRestrictions();//category restrictions
         $data["productRestriction"] = $p->getAllProductRestriction();
         $data["Variations"] = $p->getAllVariations();
         $data["productProperties"] = $p->getAllProperties();
@@ -287,7 +287,7 @@ class merchant
         return $this->Core->FrontController->partialRender("product-restriction-list-" . $_POST["type"] . ".php", $data);
     }
 
-    public function VIEW_showProductRestrictions(): null
+    public function VIEW_showProductRestrictions()
     {
         $this->hasToBeLoggedIn();
         require_once("helpers/manageProducts.php");
@@ -303,7 +303,7 @@ class merchant
         return $this->Core->FrontController->partialRender("product-restrictions.php", $data);
     }
 
-    public function VIEW_showPriceConditions(): null
+    public function VIEW_showPriceConditions()
     {
         $this->hasToBeLoggedIn();
         require_once("helpers/manageProducts.php");
@@ -336,7 +336,7 @@ class merchant
         }
     }
 
-    public function VIEW_updateProductoptions(): null
+    public function VIEW_updateProductoptions()
     {
         /* Updates the option part on add Product Page after new option or bundle is created */
         $this->hasToBeLoggedIn();
@@ -352,7 +352,7 @@ class merchant
         return $this->Core->FrontController->partialRender("product-options.php", $data);
     }
 
-    public function VIEW_addOption(): null
+    public function VIEW_addOption()
     {
         $this->hasToBeLoggedIn();
         require_once("helpers/manageProducts.php");
@@ -387,7 +387,7 @@ class merchant
         include "helpers/manageProducts.php";
         $manageproducts = new manageProducts($this->Core);
         $data["products"] = $manageproducts->getAllProductsById($products);
-        $this->renderProducts(data: $data);
+        $this->renderProducts($data);
 
     }
 
@@ -510,21 +510,21 @@ class merchant
         if (empty($data["shops"])) {
             header("Location:/merchant/addShop");
             die();
-        } else {
-            require_once("helpers/manageProducts.php");
-            $p = new manageProducts($this->Core);
-            $data["productType"] = $p->getProductType();
-            $data["foodAllergies"] = $p->getFoodAllergies();
-            $data["productCategories"] = $p->getProductCategories();
-            $data["restrictions"] = $p->getAllRestrictions();//category restrictions
-            $data["productRestriction"] = $p->getAllProductRestriction();
-            // $data["Variations"]                 = $p->getAllVariations();
-            $data["productProperties"] = $p->getAllProperties();
-            $data["productOptions"] = $p->getAllOptions();
-            $data["currency"] = $p->getAllCurrencies();
-            $data["priceConditions"] = $p->getAllPriceConditions();
-            $this->renderAddProducts(data: $data);
         }
+
+        require_once("helpers/manageProducts.php");
+        $p = new manageProducts($this->Core);
+        $data["productType"] = $p->getProductType();
+        $data["foodAllergies"] = $p->getFoodAllergies();
+        $data["productCategories"] = $p->getProductCategories();
+        $data["restrictions"] = $p->getAllRestrictions();//category restrictions
+        $data["productRestriction"] = $p->getAllProductRestriction();
+        // $data["Variations"]                 = $p->getAllVariations();
+        $data["productProperties"] = $p->getAllProperties();
+        $data["productOptions"] = $p->getAllOptions();
+        $data["currency"] = $p->getAllCurrencies();
+        $data["priceConditions"] = $p->getAllPriceConditions();
+        $this->renderAddProducts($data);
     }
 
 
@@ -543,7 +543,7 @@ class merchant
         }
     }
 
-    public function VIEW_getCrossSelling(): null
+    public function VIEW_getCrossSelling()
     {
         $this->hasToBeLoggedIn();
         $data["Core"] = $this->Core;
@@ -555,7 +555,7 @@ class merchant
         return $this->Core->FrontController->partialRender("product-crossselling.php", $data);
     }
 
-    public function VIEW_getVariations(): null
+    public function VIEW_getVariations()
     {
         $this->hasToBeLoggedIn();
         $data["Core"] = $this->Core;
