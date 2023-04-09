@@ -20,7 +20,11 @@ class merchant
     {
         require_once("helpers/manageProducts.php");
         $p = new manageProducts($this->Core);
+        $ids = array_map(fn($shop) => $shop["shop_id"], $p->getAllShopTransportByProductId($productId));
         $data["shops"] = $this->getShopsByMerchant($_SESSION["merchant"]["merchantId"]);
+        $data["inShops"] = $this->getShopBasicInfoByIds($ids);
+        $data["productIsInShops"] = $data["inShops"];
+        $data["inShopsAvailabe"] = $data["inShops"];
         $data["WholeProduct"] = $p->getWholeProduct($productId);
         $data["productType"] = $p->getProductType();
         $data["foodAllergies"] = $p->getFoodAllergies();
@@ -32,6 +36,8 @@ class merchant
         $data["productOptions"] = $p->getAllOptions();
         $data["currency"] = $p->getAllCurrencies();
         $data["priceConditions"] = $p->getAllPriceConditions();
+        $data["productPhysicalInfo"] = $p->getProductPhysicalInfo($productId);
+        $data["preparationTime"] = $p->getProductPreparationTime($productId, 0);
         $this->renderEditProduct($data);
     }
 

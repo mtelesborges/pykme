@@ -2,15 +2,15 @@
 $Core = $data["Core"];?>
 <div class="col s12">
 		<div class="col s6 input-field">
-			<input id="preparationTime" type="number" class="validate" min="0"/>
+			<input id="preparationTime" type="number" class="validate" min="0" value="<?php echo $data["preparationTime"]["time"];?>"/>
 			<label><?php echo $Core->Translator->translate("Time amount");?></label>
 		</div>
 		<div class="col s6 input-field">
 			<select id="typePreparationTime">
-				<option value="i"><?php echo $Core->Translator->translate("Minutes");?></option>
-				<option value="h"><?php echo $Core->Translator->translate("Hours");?></option>
-				<option value="d"><?php echo $Core->Translator->translate("Days");?></option>
-				<option value="w"><?php echo $Core->Translator->translate("Weeks");?></option>
+				<option value="i" <?php if($data["preparationTime"]["type"] == "i") echo "selected";?>><?php echo $Core->Translator->translate("Minutes");?></option>
+				<option value="h" <?php if($data["preparationTime"]["type"] == "h") echo "selected";?>><?php echo $Core->Translator->translate("Hours");?></option>
+				<option value="d" <?php if($data["preparationTime"]["type"] == "d") echo "selected";?>><?php echo $Core->Translator->translate("Days");?></option>
+				<option value="w" <?php if($data["preparationTime"]["type"] == "w") echo "selected";?>><?php echo $Core->Translator->translate("Weeks");?></option>
 			</select>
 		</div>
 	</div>

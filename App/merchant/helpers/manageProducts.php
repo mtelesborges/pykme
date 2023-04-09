@@ -727,8 +727,8 @@ class manageProducts
 
     public function getAllProductDescriptions($pId)
     {
-        $db = $this->Core->getDB();
-        $descriptions = $db->query("SELECT * FROM productDescription WHERE product_id=? AND status='active'", array("i", $pId), false);
+        $db             = $this->Core->getDB();
+        $descriptions   = $db->query("SELECT * FROM productDescription WHERE product_id=? AND status='active'", array("i", $pId), false);
         return $descriptions;
     }
 
@@ -856,7 +856,7 @@ class manageProducts
 
                 }
             }
-            if ($has_category == false) {
+            if (!$has_category) {
                 die();
             }
             /////////////////////////////////////////////////////////////////
@@ -874,7 +874,7 @@ class manageProducts
             /////////////////////////////////////////////////////////////////
             // TRANSPORTATION
             /////////////////////////////////////////////////////////////////
-            if ($has_transport == true) {
+            if ($has_transport) {
                 // Save shop and variations with transport
                 foreach ($product->Transportation->transportationShops as $tranShop) {
                     $shopId = $tranShop->shopId;
@@ -1856,11 +1856,21 @@ class manageProducts
         }, $data);
     }
 
-    public function getAllProperties(): array|int|string
+    public function getAllProperties(): array
     {
         $db = $this->Core->getDB();
 
         return $db->query("SELECT * FROM productProperties WHERE status=? ORDER BY name DESC", array("s", "active"), false);
+    }
+
+    public function getProductPhysicalInfo($pid) {
+        $db = $this->Core->getDB();
+        return $db->query("SELECT * FROM productPhysicalInfo WHERE status=? AND variation_id = 0 AND product_id = ?", array("si", "active", $pid), false)[0];
+    }
+
+    public function getAllShopTransportByProductId($pid) {
+        $db = $this->Core->getDB();
+        return $db->query("SELECT shop_id FROM product_has_shop_transport WHERE status=? AND variation_id = 0 AND product_id = ?", array("si", "active", $pid), false);
     }
 
 }

@@ -11,7 +11,6 @@ $data["Core"] = $Core;
             <h3><?php echo $Core->Translator->translate("Edit Product"); ?></h3>
             <section id="productInfo" class="scrollspy section">
                 <h5 class="h5divider"><i class="material-icons left">info</i><?php echo $Core->Translator->translate("Basic Information");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
-                 <?php echo "<pre>";echo json_encode($data["WholeProduct"]);echo "</pre>";?>
                 <div class="input-field col s12">
                     <select name="lang[]" id="infoLang">
                         <?php
@@ -30,7 +29,7 @@ $data["Core"] = $Core;
                     <div class="col s12">
                         
                         <input name="defaultInfoLang" class="with-gap" value="<?php echo $lang["id"]?>" <?php foreach($data["WholeProduct"]["Descriptions"] as $description){ if($description["default"] == 1 && $description["lang_id"] == $lang["id"] ){ ?>checked="checked"<?php }}?> type="radio" id="defaultInfoL_<?php echo $lang["id"]?>"/>
-                        <label for="defaultInfoL_<?php echo $lang["id"]?>"><span><?php echo $Core->Translator->translate("Default Language");?> <i class="material-icons tooltipped" data-position="bottom" data-delay="50" data-tooltip="<?php echo $Core->Translator->translate("Show in this language if selected language by the customer is not translated");?>">help_outline</i></span>
+                        <label for='defaultInfoL_<?php echo $lang["id"]?>'><span><?php echo $Core->Translator->translate("Default Language");?> <i class="material-icons tooltipped" data-position="bottom" data-delay="50" data-tooltip="<?php echo $Core->Translator->translate("Show in this language if selected language by the customer is not translated");?>">help_outline</i></span>
                         </label>
                     </div>
                     <div class="input-field col s12">
@@ -119,34 +118,33 @@ $data["Core"] = $Core;
             <section id="productCategory" class="scrollspy section">
                 <h5 class="h5divider"><i class="material-icons left">list</i><?php echo $Core->Translator->translate("Shop Category");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
                 <?php if(!empty($data["productCategories"])){?>
-                <div class="col s12" class="productGreyBox">
-                    <div class="col m6 s12 input-field">
-                        <input type="text" id="searchCategoryName" onKeyUp="searchCategories()"/>
-                        <label><?php echo $Core->Translator->translate("Search Category");?></label>
-                    </div>
-                    <div class="col m6 s12 input-field">
-                        <!-- Filter by shop => $s -->
-                        <select  onChange="searchCategories()" id="searchCategoryShop">
-                            <option value="0"><?php echo $Core->Translator->translate("All Shops");?></option>
-                        <?php
-                        $availableShops = array();
-                        foreach($data["productCategories"] as $pc){
-                            foreach($pc["inShops"] as $shop){
-                                foreach($shop as $s){
-                                $availableShops[$s["info"]["id"]] = $s;
+                    <div class="col s12" class="productGreyBox">
+                        <div class="col m6 s12 input-field">
+                            <input type="text" id="searchCategoryName" onKeyUp="searchCategories()"/>
+                            <label><?php echo $Core->Translator->translate("Search Category");?></label>
+                        </div>
+                        <div class="col m6 s12 input-field">
+                            <!-- Filter by shop => $s -->
+                            <select  onChange="searchCategories()" id="searchCategoryShop">
+                                <option value="0"><?php echo $Core->Translator->translate("All Shops");?></option>
+                            <?php
+                            $availableShops = array();
+                            foreach($data["productCategories"] as $pc){
+                                foreach($pc["inShops"] as $shop){
+                                    foreach($shop as $s){
+                                    $availableShops[$s["info"]["id"]] = $s;
+                                    }
                                 }
-                            } 
-                        }
-                        foreach($availableShops as $s){
-                        ?>
-                            <option value="<?php echo $s["info"]["id"]?>"><?php echo $s["info"]["name"]?></option>
-                        <?php
-                        }
-                        ?>
-
-                        </select>
+                            }
+                            foreach($availableShops as $s){
+                            ?>
+                                <option value="<?php echo $s["info"]["id"]?>"><?php echo $s["info"]["name"]?></option>
+                            <?php
+                            }
+                            ?>
+                            </select>
+                        </div>
                     </div>
-                </div>
                 <?php }?>
                 <div id="load_productCategory"  class="scrollspy section">
                     <?php $Core->FrontController->partialRender("product-category-list.php",$data);?>
@@ -162,7 +160,7 @@ $data["Core"] = $Core;
                 <h5 class="h5divider"><i class="material-icons left">local_shipping</i><?php echo $Core->Translator->translate("Transportation");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
                 <p class="grey-text"><?php echo $Core->Translator->translate("Please give us information about the size and weight when product is in a package (size and weight of package with product inside).");?></p>
                 <div id="load_product_Transportation">
-                    <?php $Core->FrontController->partialRender("product-transportation.php",$data);?>
+                    <?php $Core->FrontController->partialRender("product-transportation.php", $data);?>
                 </div>
             </section>
             <section id="productPreparation" class="scrollspy section">
@@ -234,8 +232,8 @@ $data["Core"] = $Core;
             <div class="col s12 input-field">
                 <button type="button" class="waves-effect waves-light btn" onclick="addProduct()"><i class="material-icons right">arrow_forward</i><?php echo $Core->Translator->translate("Create Product");?></button>
             </div>
-        </form>
         </div>
+    </form>
         <div class="col hide-on-small-only m3 s12">
             <div class="target">
                 <ul class="section table-of-contents" style="max-width: 100%">
@@ -343,7 +341,6 @@ var validator = $("#addProduct").validate({
             "shop[]":{
                 required:true
             },
-			
         },
         //For custom messages
         messages: {
@@ -807,9 +804,9 @@ function getPriceList(ids,variations){
 
 
 function  searchCategories(){
-    var name    = $("#searchCategoryName").val();
-    var shop_id = $("#searchCategoryShop").val();
-    var data = {
+    const name    = $("#searchCategoryName").val();
+    const shop_id = $("#searchCategoryShop").val();
+    const data = {
          name:name,
          shop_id:shop_id
      };
