@@ -807,8 +807,9 @@ function  searchCategories(){
     const name    = $("#searchCategoryName").val();
     const shop_id = $("#searchCategoryShop").val();
     const data = {
-         name:name,
-         shop_id:shop_id
+         name: name,
+         shop_id: shop_id,
+         product_id: <?php echo $data["WholeProduct"]["Info"]["id"] ?>
      };
     $.ajax({
         url:"/merchant/searchProductCategories/",

@@ -589,6 +589,8 @@ class merchant
         require_once("helpers/manageProducts.php");
         $p = new manageProducts($this->Core);
         $data["productCategories"] = $p->searchProductCategories($_POST["shop_id"], $_POST["name"]);
+        $product_id = $_POST["product_id"];
+        if($product_id) $data["WholeProduct"] = $p->getWholeProduct($product_id);
         $data["Core"] = $this->Core;
         $this->Core->FrontController->partialRender("product-category-list.php", $data);
     }
