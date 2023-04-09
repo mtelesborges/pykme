@@ -251,6 +251,16 @@ class merchant
         }
     }
 
+    public function VIEW_updateProduct()
+    {
+        $this->hasToBeLoggedIn();
+        if ($_POST) {
+            require_once("helpers/manageProducts.php");
+            $p = new manageProducts($this->Core);
+            $p->updateProduct();
+        }
+    }
+
     public function VIEW_showOrderOptions()
     {
         $this->hasToBeLoggedIn();

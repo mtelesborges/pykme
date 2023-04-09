@@ -6,7 +6,7 @@ $data["Core"] = $Core;
 
 <div class="container">
 	<div class="row">
-	<form action="/merchant/addProduct" method="post" id="addProduct" enctype="multipart/form-data">
+	<form action="/merchant/updateProduct" method="post" id="addProduct" enctype="multipart/form-data">
         <div class="col m9 s12">
             <h3><?php echo $Core->Translator->translate("Edit Product"); ?></h3>
             <section id="productInfo" class="scrollspy section">

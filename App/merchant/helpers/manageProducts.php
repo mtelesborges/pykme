@@ -390,11 +390,10 @@ class manageProducts
         return $getPreparation[0];
     }
 
-    public function getAllProductPreparationTime($pId): array|int|string
+    public function getAllProductPreparationTime($pId): array
     {
         $db = $this->Core->getDB();
-        $preparationTime = $db->query("SELECT * FROM product_has_time WHERE product_id=? AND status='active'", array("i", $pId), false);
-        return $preparationTime;
+        return $db->query("SELECT * FROM product_has_time WHERE product_id=? AND status='active'", array("i", $pId), false);
     }
 
     private function mapProductCrosseling($pId): array
@@ -442,9 +441,7 @@ class manageProducts
 
         // get categories ID
         foreach ($query as $result) {
-            if (in_array($result["productCategory_id"], $categories)) {
-                //do nothing
-            } else {
+            if (!in_array($result["productCategory_id"], $categories)) {
                 $categories[] = $result["productCategory_id"];
             }
         }
@@ -487,7 +484,7 @@ class manageProducts
         $product["PreparationTime"] = $this->getAllProductPreparationTime($productId);
         $product["Categories"] = $this->getAllProductCategotries($productId);
 
-        if ($p["type_id"] == 1 || $p["type_id"] == 2 || $p["type_id"] == 3) {
+        if (in_array($p["type_id"], [1, 2, 3])) {
             // get additional info
             $getAdditionalInfo = $db->query("SELECT object FROM productAdditionalInfo WHERE product_id=? AND status='active'", array("i", $productId), false);
             if (!empty($getAdditionalInfo)) {
@@ -562,11 +559,11 @@ class manageProducts
 
         $product["Description"] = $this->getProductDescriptions($pId, $this->Translator->langId);
 
-        $product["Prices"] = $this->getProductPrices($pId, $Core->currentCurrencyId, $shopId);
+        $product["Prices"] = $this->getProductPrices($pId, $this->Core->currentCurrencyId, $shopId);
 
         $product["PreparationTime"] = $this->getProductPreparationTime($pId, 0);
 
-        if ($p["type_id"] == 1 || $p["type_id"] == 2 || $p["type_id"] == 3) {
+        if (in_array($p["type_id"], [1, 2, 3])) {
             // get additional info
             $getAdditionalInfo = $db->query("SELECT object FROM productAdditionalInfo WHERE product_id=? AND status='active'", array("i", $pId), false);
             if (!empty($getAdditionalInfo)) {
@@ -662,13 +659,13 @@ class manageProducts
         return $products;
     }
 
-    public function getProductImages($pId, $varId = 0): array|int|string
+    public function getProductImages($pId, $varId = 0): array
     {
         $db = $this->Core->getDB();
         return $db->query("SELECT * FROM product_has_images WHERE product_id=? AND variation_id=? AND status='active'", array("is", $pId, $varId), false);
     }
 
-    public function getAllProductImages($pId): array|int|string
+    public function getAllProductImages($pId): array
     {
         $db = $this->Core->getDB();
         return $db->query("SELECT * FROM product_has_images WHERE product_id=? AND status='active'", array("i", $pId), false);
@@ -677,37 +674,41 @@ class manageProducts
     public function getProductPrices($pId, $currency = "default", $shopId = null)
     {
         $db = $this->Core->getDB();
+
         if ($currency == "default") {
             return $db->query("SELECT * FROM product_has_price WHERE product_id=? AND isDefault=1 ", array("i", $pId), false);
-        } else {
-            if ($shopId != null) {
-                $result = $db->query("SELECT * FROM product_has_price WHERE product_id=? AND currency_id=? AND shop_id=?", array("iii", $pId, $currency, $shopId), false);
-
-                // if currency not found return default
-                if (empty($result)) {
-                    return $db->query("SELECT * FROM product_has_price WHERE product_id=? AND isDefault=1 AND shop_id=?", array("ii", $pId, $shopId), false);
-                } else {
-                    return $result;
-                }
-            }
         }
+
+        if (empty($shopId)) {
+            return null;
+        }
+
+        $result = $db->query("SELECT * FROM product_has_price WHERE product_id=? AND currency_id=? AND shop_id=?", array("iii", $pId, $currency, $shopId), false);
+
+        // if currency not found return default
+        if (!empty($result)) {
+            return $result;
+        }
+
+        return $db->query("SELECT * FROM product_has_price WHERE product_id=? AND isDefault=1 AND shop_id=?", array("ii", $pId, $shopId), false);
+
     }
 
-    public function getAllProductPrices($pId)
+    public function getAllProductPrices($pId): array
     {
         $db = $this->Core->getDB();
-        $prices = $db->query("SELECT * FROM product_has_price WHERE product_id=?", array("i", $pId), false);
-        return $prices;
+        return $db->query("SELECT * FROM product_has_price WHERE product_id=?", array("i", $pId), false);
     }
 
-    public function getProductsInShops($pId, $catId = 0)
+    public function getProductsInShops($pId, $catId = 0): array
     {
         $db = $this->Core->getDB();
+
         if ($catId == 0) {
             return $db->query("SELECT * FROM shop_has_products WHERE product_id=? AND status='active'", array("i", $pId), false);
-        } else {
-            return $db->query("SELECT * FROM shop_has_products WHERE product_id=? AND productCategory_id=? AND status='active'", array("ii", $pId, $catId), false);
         }
+
+        return $db->query("SELECT * FROM shop_has_products WHERE product_id=? AND productCategory_id=? AND status='active'", array("ii", $pId, $catId), false);
     }
 
     public function getProductDescriptions($pId, $lang = "default")
@@ -716,20 +717,21 @@ class manageProducts
         if ($lang == "default") {
             $description = $db->query("SELECT * FROM productDescription WHERE product_id=? AND `default`=1 AND status='active' LIMIT 1", array("i", $pId), false);
             return $description[0];
-        } else {
-            $desc = $db->query("SELECT * FROM productDescription WHERE product_id=? AND lang_id=? AND status='active' LIMIT 1", array("ii", $pId, $lang), false);
-            if (empty($desc)) {
-                $desc = $db->query("SELECT * FROM productDescription WHERE product_id=? AND `default`=1 AND status='active' LIMIT 1", array("i", $pId), false);
-            }
-            return $desc[0];
         }
+
+        $desc = $db->query("SELECT * FROM productDescription WHERE product_id=? AND lang_id=? AND status='active' LIMIT 1", array("ii", $pId, $lang), false);
+
+        if (empty($desc)) {
+            $desc = $db->query("SELECT * FROM productDescription WHERE product_id=? AND `default`=1 AND status='active' LIMIT 1", array("i", $pId), false);
+        }
+
+        return $desc[0];
     }
 
     public function getAllProductDescriptions($pId)
     {
-        $db             = $this->Core->getDB();
-        $descriptions   = $db->query("SELECT * FROM productDescription WHERE product_id=? AND status='active'", array("i", $pId), false);
-        return $descriptions;
+        $db = $this->Core->getDB();
+        return $db->query("SELECT * FROM productDescription WHERE product_id=? AND status='active'", array("i", $pId), false);
     }
 
 
@@ -743,23 +745,23 @@ class manageProducts
         }
         $db = $this->Core->getDB();
 
-        $has_options        = $product->Options                 ? 1 : 0;
-        $has_orderOptions   = $product->OrderOptions            ? 1 : 0;
-        $has_conditions     = !empty($product->PriceConditions) ? 1 : 0;
-        $has_properties     = !empty($product->BasicInformation->typeInformation->properties)   ? 1 : 0;
-        $has_allergic       = $product->BasicInformation->typeInformation->noAllergies          ? 1 : 0;
+        $has_options = $product->Options ? 1 : 0;
+        $has_orderOptions = $product->OrderOptions ? 1 : 0;
+        $has_conditions = !empty($product->PriceConditions) ? 1 : 0;
+        $has_properties = !empty($product->BasicInformation->typeInformation->properties) ? 1 : 0;
+        $has_allergic = $product->BasicInformation->typeInformation->noAllergies ? 1 : 0;
 
-        $vehicles           = $db->query("SELECT id FROM vehicles WHERE 1=?", array("s", 1), false);
-        $nVehicles          = count($vehicles[0]);
+        $vehicles = $db->query("SELECT id FROM vehicles WHERE 1=?", array("s", 1), false);
+        $nVehicles = count($vehicles[0]);
 
-        $exclude_vehicles   = $nVehicles != count($product->RestrictionVehicles)    ? 1 : 0;
-        $has_restrictions   = !empty($product->Restrictions)                        ? 1 : 0;
-        $has_equipment      = !empty($product->RestrictionEquipment)                ? 1 : 0;
-        $has_img            = !empty($product->Images)                              ? 1 : 0;
-        $has_transport      = $product->Transportation                              ? 1 : 0;
-        $has_variations     = !empty($product->Variations)                          ? 1 : 0;
-        $has_expiry         = !empty($product->ExpiryDates)                         ? 1 : 0;
-        $has_crossselling   = !empty($product->CrossSelling)                        ? 1 : 0;
+        $exclude_vehicles = $nVehicles != count($product->RestrictionVehicles) ? 1 : 0;
+        $has_restrictions = !empty($product->Restrictions) ? 1 : 0;
+        $has_equipment = !empty($product->RestrictionEquipment) ? 1 : 0;
+        $has_img = !empty($product->Images) ? 1 : 0;
+        $has_transport = $product->Transportation ? 1 : 0;
+        $has_variations = !empty($product->Variations) ? 1 : 0;
+        $has_expiry = !empty($product->ExpiryDates) ? 1 : 0;
+        $has_crossselling = !empty($product->CrossSelling) ? 1 : 0;
 
         $createdProduct = $db->query("INSERT INTO products VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,NOW(),NOW(),'pending')", array("iiiiiiiiiiiiiii",
             $_SESSION["merchant"]["merchantId"],
@@ -792,7 +794,7 @@ class manageProducts
                 }
             }
             if (!$hasDescription) {
-                echo $Core->Translator->translate("No description");
+                echo $this->Core->Translator->translate("No description");
                 die();
             }
 
@@ -948,7 +950,7 @@ class manageProducts
                     $shopId = $shopP->shopId;
                     //default product
                     $varId = 0;
-                    if ($shopP->isDefault == true && empty($shopP->inStorePrice) && empty($shopP->deliveryPrice)) {
+                    if ($shopP->isDefault && empty($shopP->inStorePrice) && empty($shopP->deliveryPrice)) {
                         die();
                     } else {
                         $db->query("INSERT INTO product_has_price VALUES (0,?,?,?,?,?,?,'',?,?,?,'',?,?,NOW(),NOW(),'active',0)", array("iiiiiddsdds", $pId, $varId, $shopP->currencyId, intval($shopP->isDefault), $shopId, $shopP->inStorePrice, $shopP->inStoreTax, $shopP->inStoreTaxType, $shopP->deliveryPrice, $shopP->deliveryTax, $shopP->deliveryTaxType), true);
@@ -1084,6 +1086,19 @@ class manageProducts
         }
         header("Location:/merchant/products");
     }
+
+    public function updateProduct()
+    {
+        $product = json_decode($_POST["product"]);
+        if (empty($product)) {
+            header("Location:/merchant/products");
+            die();
+        }
+
+        $db = $this->Core->getDB();
+        header("Location:/merchant/products");
+    }
+
 
     public function createProductRestriction()
     {
@@ -1738,7 +1753,7 @@ class manageProducts
         if ($_POST["from"] > $_POST["until"]) {
             return false;
         }
-       return $db->query("INSERT INTO restriction_Date VALUES (0,?,?,?,?,'active')", array("isss", $_SESSION["merchant"]["merchantId"], date("Y-m-d", strtotime($_POST["from"])), date("Y-m-d", strtotime($_POST["until"])), $_POST["action"]), true);
+        return $db->query("INSERT INTO restriction_Date VALUES (0,?,?,?,?,'active')", array("isss", $_SESSION["merchant"]["merchantId"], date("Y-m-d", strtotime($_POST["from"])), date("Y-m-d", strtotime($_POST["until"])), $_POST["action"]), true);
     }
 
     public function createRestrictionDeliveryTime(): bool
@@ -1831,11 +1846,11 @@ class manageProducts
 
     public function getVariationsByIds($ids = []): array
     {
-        if(empty($ids)) {
+        if (empty($ids)) {
             return [];
         }
         $db = $this->Core->getDB();
-        $result = array_map(function($id) use($db) {
+        $result = array_map(function ($id) use ($db) {
             $response = $db->query("SELECT * FROM productVariation WHERE id=?", array("i", $id), false);
             return $response[0];
         }, $ids);
@@ -1845,7 +1860,7 @@ class manageProducts
     public function getVariationsData($data): array
     {
         $db = $this->Core->getDB();
-        return array_map(function($item) use ($db) {
+        return array_map(function ($item) use ($db) {
             $descriptions = $db->query("SELECT * FROM productVariationDescription WHERE pv_id=? AND status='active'", array("i", $sv["id"]), false);
             return [
                 $sv["id"] => [
@@ -1863,12 +1878,14 @@ class manageProducts
         return $db->query("SELECT * FROM productProperties WHERE status=? ORDER BY name DESC", array("s", "active"), false);
     }
 
-    public function getProductPhysicalInfo($pid) {
+    public function getProductPhysicalInfo($pid)
+    {
         $db = $this->Core->getDB();
         return $db->query("SELECT * FROM productPhysicalInfo WHERE status=? AND variation_id = 0 AND product_id = ?", array("si", "active", $pid), false)[0];
     }
 
-    public function getAllShopTransportByProductId($pid) {
+    public function getAllShopTransportByProductId($pid)
+    {
         $db = $this->Core->getDB();
         return $db->query("SELECT shop_id FROM product_has_shop_transport WHERE status=? AND variation_id = 0 AND product_id = ?", array("si", "active", $pid), false);
     }
