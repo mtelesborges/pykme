@@ -92,10 +92,17 @@ class api{
             return;
         }
 
-        $data = json_decode(file_get_contents('php://input'));
+        $data = json_decode(file_get_contents('php://input'), true);
 
-        $driverId = $data["driver_id"];
-        $orderId = $data["order_id"];
+        if(empty($data)) {
+            http_response_code(422);
+            echo json_encode(["message" => "Driver is required."]);
+            return;
+        }
+
+        $driverId = $data["driver_id"] ?? null;
+        $orderId = $data["order_id"] ?? null;
+        $vehicleId = $data["vehicle_id"] ?? null;
 
         if(empty($driverId)) {
             http_response_code(422);
@@ -109,13 +116,19 @@ class api{
             return;
         }
 
+        if(empty($vehicleId)) {
+            http_response_code(422);
+            echo json_encode(["message" => "Vehicle is required."]);
+            return;
+        }
+
         $db = $this->Core->getDB();
 
         $sql = <<<SQL
-            update orders set driver_id = ?, delivery_stated_at = CURRENT_TIMESTAMP where id = ?
+            update orders set driver_id = ?, vehicle_id = ?, delivery_started_at = CURRENT_TIMESTAMP where id = ?
         SQL;
 
-        $db->query($sql, array('ii', $driverId, $orderId));
+        $db->query($sql, array('iii', $driverId, $vehicleId, $orderId), true);
 
         http_response_code(204);
     }
