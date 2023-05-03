@@ -6,234 +6,235 @@ $data["Core"] = $Core;
 
 <div class="container">
 	<div class="row">
-	<form action="/merchant/updateProduct" method="post" id="addProduct" enctype="multipart/form-data">
-        <div class="col m9 s12">
-            <h3><?php echo $Core->Translator->translate("Edit Product"); ?></h3>
-            <section id="productInfo" class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">info</i><?php echo $Core->Translator->translate("Basic Information");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
-                <div class="input-field col s12">
-                    <select name="lang[]" id="infoLang">
-                        <?php
-                        $langs = $this->Core->Translator->getLanguages();
-                        foreach($langs as $lang){  
-                            ?>
-                        <option value="<?php echo $lang["code"]?>" <?php foreach($data["WholeProduct"]["Descriptions"] as $description){ if($description["default"] == 1 && $description["lang_id"] == $lang["id"]){echo "selected";}}?> ><?php echo $Core->Translator->translate($lang["name"]);?> (<?php echo $lang["local_name"]?>)</option>
-                        <?php } ?>
-                    </select>
-                    <label for="lang[]"><?php echo $Core->Translator->translate("Language");?></label>
-                </div>
-                <?php
-                foreach($langs as $lang){
-                ?>
-                <div id="info_<?php echo $lang["code"]?>"  <?php foreach($data["WholeProduct"]["Descriptions"] as $description){ if($description["default"] == 1 && $description["lang_id"] == $lang["id"]){?> style="display:block"<?php }}?> class="productInfo">
-                    <div class="col s12">
-                        
-                        <input name="defaultInfoLang" class="with-gap" value="<?php echo $lang["id"]?>" <?php foreach($data["WholeProduct"]["Descriptions"] as $description){ if($description["default"] == 1 && $description["lang_id"] == $lang["id"] ){ ?>checked="checked"<?php }}?> type="radio" id="defaultInfoL_<?php echo $lang["id"]?>"/>
-                        <label for='defaultInfoL_<?php echo $lang["id"]?>'><span><?php echo $Core->Translator->translate("Default Language");?> <i class="material-icons tooltipped" data-position="bottom" data-delay="50" data-tooltip="<?php echo $Core->Translator->translate("Show in this language if selected language by the customer is not translated");?>">help_outline</i></span>
-                        </label>
-                    </div>
+        <form action="/merchant/updateProduct" method="post" id="addProduct" enctype="multipart/form-data">
+            <div class="col m9 s12">
+                <h3><?php echo $Core->Translator->translate("Edit Product"); ?></h3>
+                <input id="product_id" name="product_id" value="<?php echo $data["WholeProduct"]["Info"]["id"];?>" hidden>
+                <section id="productInfo" class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">info</i><?php echo $Core->Translator->translate("Basic Information");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
                     <div class="input-field col s12">
-                        <label for="name_<?php echo $lang["id"]?>"><?php echo $Core->Translator->translate("Product Name");?> (<?php echo $Core->Translator->translate($lang["name"]);?>)</label>
-                        <input name="name_<?php echo $lang["id"]?>" data-lang="<?php echo $lang["id"]?>" type="text" class="productName validate" <?php foreach($data["WholeProduct"]["Descriptions"] as $description){ if($description["lang_id"] == $lang["id"] ){ ?>value="<?php echo $description["title"];?>"<?php }}?>/>
-                    </div>
-                    <div class="input-field col s12">
-                        <label for="description_<?php echo $lang["id"]?>"><?php echo $Core->Translator->translate("Product Description");?> (<?php echo $Core->Translator->translate($lang["name"]);?>)</label>
-                        <textarea id="description_<?php echo $lang["id"]?>" data-lang="<?php echo $lang["id"]?>" class="materialize-textarea productDescription validate"><?php foreach($data["WholeProduct"]["Descriptions"] as $description){ if($description["lang_id"] == $lang["id"] ){ ?><?php echo $description["description"];?><?php }}?></textarea>
-                    </div>
-                </div>
-                <?php
-                }
-                ?>
-                <div class="col s12 input-field">
-                    <label for="productType" class="active"><?php echo $Core->Translator->translate("Product Type");?></label>
-                    <select id="productType" class="validate">
-                        <option disabled selected value=""><?php echo $Core->Translator->translate("Please select product type");?></option>
-                        <?php 
-                        foreach($data["productType"] as $type){
-                        ?>
-                        <option value="<?php echo $type["id"]?>"  <?php if($data["WholeProduct"]["Info"]["type_id"] == $type["id"]){ echo "selected";}?>><?php echo $Core->Translator->translate($type["name"]);?></option>
-                        <?php
-                        }
-                        ?>
-                    </select>
-                </div>
-                <div id="ifBeverage" style="display: none">
-                    <div class="col s6 input-field ">
-                        <label for="content"><?php echo $Core->Translator->translate("Content Amount");?></label>
-                        <input type="number" id="contentBevarage" class="validate" min="0" step="any"/>
-                    </div>
-                    <div class="col s6 input-field ">
-                        <select id="contentScalaType">
-                            <option value="l"><?php echo $Core->Translator->translate("Liters (l)")?></option>
-                            <option value="dl"><?php echo $Core->Translator->translate("Deciliters (dl)")?></option>
-                            <option value="cl"><?php echo $Core->Translator->translate("Centiliters (cl)")?></option>
+                        <select name="lang[]" id="infoLang">
+                            <?php
+                            $langs = $this->Core->Translator->getLanguages();
+                            foreach($langs as $lang){
+                                ?>
+                            <option value="<?php echo $lang["code"]?>" <?php foreach($data["WholeProduct"]["Descriptions"] as $description){ if($description["default"] == 1 && $description["lang_id"] == $lang["id"]){echo "selected";}}?> ><?php echo $Core->Translator->translate($lang["name"]);?> (<?php echo $lang["local_name"]?>)</option>
+                            <?php } ?>
                         </select>
+                        <label for="lang[]"><?php echo $Core->Translator->translate("Language");?></label>
                     </div>
-                </div>
-                <div id="ifCalories" <?php if($data["WholeProduct"]["Info"]["type_id"] == 3 || $data["WholeProduct"]["Info"]["type_id"] == 4 ){?>style="display: none"<?php }?>>
-                    <div class="col s12 input-field ">
-                        <label for="calories"><?php echo $Core->Translator->translate("Calories");?></label>
-                        <input type="number" id="calories" value="<?php echo $data["WholeProduct"]["AdditionalInfo"]->contentCalories;?>"/>
-                    </div>
-                </div>
-                <div id="productPropeties" class="col s12 input-field" <?php if($data["WholeProduct"]["Info"]["type_id"] == 1 || $data["WholeProduct"]["Info"]["type_id"] == 2 ){?>style="display: block"<?php }?>>
-                    <select id="selectProductPropeties" multiple class="validate">
-                        <option disabled ><?php echo $Core->Translator->translate("Please select propeties");?></option>
-                        <?php
-                        foreach($data["productProperties"] as $property){
-                        ?>
-                            <option value="<?php echo $property["id"]?>" <?php foreach($data["WholeProduct"]["Properties"] as $prop){if($prop["id"] == $property["id"]){ echo "selected='true'";}}?>><?php echo $Core->Translator->translate($property["name"]);?></option>
-                        <?php
-                        }
-                        ?>
-                    </select>
-                    <label><?php echo $Core->Translator->translate("Properties");?></label>
-                </div>
-                <div id="ifMedical" class="ishidden" <?php if($data["WholeProduct"]["Info"]["type_id"] == 3){?>style="display: block"<?php }?>>
-                    <div class="col s12">
-                        
-                        <input name="needPrescription" id="needPrescription" type="checkbox"/>
-                        <label for="needPrescription"><span><?php echo $Core->Translator->translate("Check this if doctor prescription is needed for this product.")?></span>
-                        </label>
-                    </div>
-                </div>
-                <div id="foodAllergies" <?php if($data["WholeProduct"]["Info"]["type_id"] == 3 || $data["WholeProduct"]["Info"]["type_id"] == 4 || $data["WholeProduct"]["Info"]["has_allergic"] == 0){?>style="display:none"<?php }?>>
-                    <div class="col s12 input-field" id="selectAllergics">
-                        <label for="allergies" class="active"><?php echo $Core->Translator->translate("Allergics in this Product");?></label>
-                        <select multiple id="allergies">
-                            <option disabled ><?php echo $Core->Translator->translate("Please select allergenics");?></option>
-                            <?php foreach($data["foodAllergies"] as $allergy){?>
-                            <option value="<?php echo $allergy["id"]?>" <?php foreach($data["WholeProduct"]["Allergies"] as $a){if($a["id"] == $allergy["id"] ){echo "selected='true'";}}?>><?php echo $Core->Translator->translate($allergy["name"]);?></option>
-                            <?php }?>
-                        </select>
-                    </div>
-                    <div class="col s12">
-                        
-                        <input type="checkbox" id="noAllergicContent" <?php if($data["WholeProduct"]["Info"]["has_allergic"] == 0){echo "checked";}?>/>
-                        <label for="noAllergicContent"><span><?php echo $Core->Translator->translate("This product has no allergic content");?></span>
-                        </label>
-                    </div>
-                </div>
-            </section>
-            <section id="productCategory" class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">list</i><?php echo $Core->Translator->translate("Shop Category");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
-                <?php if(!empty($data["productCategories"])){?>
-                    <div class="col s12" class="productGreyBox">
-                        <div class="col m6 s12 input-field">
-                            <input type="text" id="searchCategoryName" onKeyUp="searchCategories()"/>
-                            <label><?php echo $Core->Translator->translate("Search Category");?></label>
+                    <?php
+                    foreach($langs as $lang){
+                    ?>
+                    <div id="info_<?php echo $lang["code"]?>"  <?php foreach($data["WholeProduct"]["Descriptions"] as $description){ if($description["default"] == 1 && $description["lang_id"] == $lang["id"]){?> style="display:block"<?php }}?> class="productInfo">
+                        <div class="col s12">
+
+                            <input name="defaultInfoLang" class="with-gap" value="<?php echo $lang["id"]?>" <?php foreach($data["WholeProduct"]["Descriptions"] as $description){ if($description["default"] == 1 && $description["lang_id"] == $lang["id"] ){ ?>checked="checked"<?php }}?> type="radio" id="defaultInfoL_<?php echo $lang["id"]?>"/>
+                            <label for='defaultInfoL_<?php echo $lang["id"]?>'><span><?php echo $Core->Translator->translate("Default Language");?> <i class="material-icons tooltipped" data-position="bottom" data-delay="50" data-tooltip="<?php echo $Core->Translator->translate("Show in this language if selected language by the customer is not translated");?>">help_outline</i></span>
+                            </label>
                         </div>
-                        <div class="col m6 s12 input-field">
-                            <!-- Filter by shop => $s -->
-                            <select  onChange="searchCategories()" id="searchCategoryShop">
-                                <option value="0"><?php echo $Core->Translator->translate("All Shops");?></option>
+                        <div class="input-field col s12">
+                            <label for="name_<?php echo $lang["id"]?>"><?php echo $Core->Translator->translate("Product Name");?> (<?php echo $Core->Translator->translate($lang["name"]);?>)</label>
+                            <input name="name_<?php echo $lang["id"]?>" data-lang="<?php echo $lang["id"]?>" type="text" class="productName validate" <?php foreach($data["WholeProduct"]["Descriptions"] as $description){ if($description["lang_id"] == $lang["id"] ){ ?>value="<?php echo $description["title"];?>"<?php }}?>/>
+                        </div>
+                        <div class="input-field col s12">
+                            <label for="description_<?php echo $lang["id"]?>"><?php echo $Core->Translator->translate("Product Description");?> (<?php echo $Core->Translator->translate($lang["name"]);?>)</label>
+                            <textarea id="description_<?php echo $lang["id"]?>" data-lang="<?php echo $lang["id"]?>" class="materialize-textarea productDescription validate"><?php foreach($data["WholeProduct"]["Descriptions"] as $description){ if($description["lang_id"] == $lang["id"] ){ ?><?php echo $description["description"];?><?php }}?></textarea>
+                        </div>
+                    </div>
+                    <?php
+                    }
+                    ?>
+                    <div class="col s12 input-field">
+                        <label for="productType" class="active"><?php echo $Core->Translator->translate("Product Type");?></label>
+                        <select id="productType" class="validate">
+                            <option disabled selected value=""><?php echo $Core->Translator->translate("Please select product type");?></option>
                             <?php
-                            $availableShops = array();
-                            foreach($data["productCategories"] as $pc){
-                                foreach($pc["inShops"] as $shop){
-                                    foreach($shop as $s){
-                                    $availableShops[$s["info"]["id"]] = $s;
-                                    }
-                                }
-                            }
-                            foreach($availableShops as $s){
+                            foreach($data["productType"] as $type){
                             ?>
-                                <option value="<?php echo $s["info"]["id"]?>"><?php echo $s["info"]["name"]?></option>
+                            <option value="<?php echo $type["id"]?>"  <?php if($data["WholeProduct"]["Info"]["type_id"] == $type["id"]){ echo "selected";}?>><?php echo $Core->Translator->translate($type["name"]);?></option>
                             <?php
                             }
                             ?>
+                        </select>
+                    </div>
+                    <div id="ifBeverage" style="display: none">
+                        <div class="col s6 input-field ">
+                            <label for="content"><?php echo $Core->Translator->translate("Content Amount");?></label>
+                            <input type="number" id="contentBevarage" class="validate" min="0" step="any"/>
+                        </div>
+                        <div class="col s6 input-field ">
+                            <select id="contentScalaType">
+                                <option value="l"><?php echo $Core->Translator->translate("Liters (l)")?></option>
+                                <option value="dl"><?php echo $Core->Translator->translate("Deciliters (dl)")?></option>
+                                <option value="cl"><?php echo $Core->Translator->translate("Centiliters (cl)")?></option>
                             </select>
                         </div>
                     </div>
-                <?php }?>
-                <div id="load_productCategory"  class="scrollspy section">
-                    <?php $Core->FrontController->partialRender("product-category-list.php",$data);?>
+                    <div id="ifCalories" <?php if($data["WholeProduct"]["Info"]["type_id"] == 3 || $data["WholeProduct"]["Info"]["type_id"] == 4 ){?>style="display: none"<?php }?>>
+                        <div class="col s12 input-field ">
+                            <label for="calories"><?php echo $Core->Translator->translate("Calories");?></label>
+                            <input type="number" id="calories" value="<?php echo $data["WholeProduct"]["AdditionalInfo"]->contentCalories;?>"/>
+                        </div>
+                    </div>
+                    <div id="productPropeties" class="col s12 input-field" <?php if($data["WholeProduct"]["Info"]["type_id"] == 1 || $data["WholeProduct"]["Info"]["type_id"] == 2 ){?>style="display: block"<?php }?>>
+                        <select id="selectProductPropeties" multiple class="validate">
+                            <option disabled ><?php echo $Core->Translator->translate("Please select propeties");?></option>
+                            <?php
+                            foreach($data["productProperties"] as $property){
+                            ?>
+                                <option value="<?php echo $property["id"]?>" <?php foreach($data["WholeProduct"]["Properties"] as $prop){if($prop["id"] == $property["id"]){ echo "selected='true'";}}?>><?php echo $Core->Translator->translate($property["name"]);?></option>
+                            <?php
+                            }
+                            ?>
+                        </select>
+                        <label><?php echo $Core->Translator->translate("Properties");?></label>
+                    </div>
+                    <div id="ifMedical" class="ishidden" <?php if($data["WholeProduct"]["Info"]["type_id"] == 3){?>style="display: block"<?php }?>>
+                        <div class="col s12">
+
+                            <input name="needPrescription" id="needPrescription" type="checkbox"/>
+                            <label for="needPrescription"><span><?php echo $Core->Translator->translate("Check this if doctor prescription is needed for this product.")?></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="foodAllergies" <?php if($data["WholeProduct"]["Info"]["type_id"] == 3 || $data["WholeProduct"]["Info"]["type_id"] == 4 || $data["WholeProduct"]["Info"]["has_allergic"] == 0){?>style="display:none"<?php }?>>
+                        <div class="col s12 input-field" id="selectAllergics">
+                            <label for="allergies" class="active"><?php echo $Core->Translator->translate("Allergics in this Product");?></label>
+                            <select multiple id="allergies">
+                                <option disabled ><?php echo $Core->Translator->translate("Please select allergenics");?></option>
+                                <?php foreach($data["foodAllergies"] as $allergy){?>
+                                <option value="<?php echo $allergy["id"]?>" <?php foreach($data["WholeProduct"]["Allergies"] as $a){if($a["id"] == $allergy["id"] ){echo "selected='true'";}}?>><?php echo $Core->Translator->translate($allergy["name"]);?></option>
+                                <?php }?>
+                            </select>
+                        </div>
+                        <div class="col s12">
+
+                            <input type="checkbox" id="noAllergicContent" <?php if($data["WholeProduct"]["Info"]["has_allergic"] == 0){echo "checked";}?>/>
+                            <label for="noAllergicContent"><span><?php echo $Core->Translator->translate("This product has no allergic content");?></span>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+                <section id="productCategory" class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">list</i><?php echo $Core->Translator->translate("Shop Category");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
+                    <?php if(!empty($data["productCategories"])){?>
+                        <div class="col s12" class="productGreyBox">
+                            <div class="col m6 s12 input-field">
+                                <input type="text" id="searchCategoryName" onKeyUp="searchCategories()"/>
+                                <label><?php echo $Core->Translator->translate("Search Category");?></label>
+                            </div>
+                            <div class="col m6 s12 input-field">
+                                <!-- Filter by shop => $s -->
+                                <select  onChange="searchCategories()" id="searchCategoryShop">
+                                    <option value="0"><?php echo $Core->Translator->translate("All Shops");?></option>
+                                <?php
+                                $availableShops = array();
+                                foreach($data["productCategories"] as $pc){
+                                    foreach($pc["inShops"] as $shop){
+                                        foreach($shop as $s){
+                                        $availableShops[$s["info"]["id"]] = $s;
+                                        }
+                                    }
+                                }
+                                foreach($availableShops as $s){
+                                ?>
+                                    <option value="<?php echo $s["info"]["id"]?>"><?php echo $s["info"]["name"]?></option>
+                                <?php
+                                }
+                                ?>
+                                </select>
+                            </div>
+                        </div>
+                    <?php }?>
+                    <div id="load_productCategory"  class="scrollspy section">
+                        <?php $Core->FrontController->partialRender("product-category-list.php",$data);?>
+                    </div>
+                </section>
+                <section id="productVariation" class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">bubble_chart</i><?php echo $Core->Translator->translate("Product Variation");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5>
+                    <div id="load_product_Variation">
+                        <?php $Core->FrontController->partialRender("product-variation.php",$data);?>
+                    </div>
+                </section>
+                <section id="transportation"  class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">local_shipping</i><?php echo $Core->Translator->translate("Transportation");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
+                    <p class="grey-text"><?php echo $Core->Translator->translate("Please give us information about the size and weight when product is in a package (size and weight of package with product inside).");?></p>
+                    <div id="load_product_Transportation">
+                        <?php $Core->FrontController->partialRender("product-transportation.php", $data);?>
+                    </div>
+                </section>
+                <section id="productPreparation" class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">timer</i><?php echo $Core->Translator->translate("Preparation Time");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
+                    <p class="grey-text"><?php echo $Core->Translator->translate("After the order is accepted by the store, how long does it usually take for this product to be ready for delivery or consumption?");?></p>
+                    <div id="load_product_Preparation">
+                        <?php $Core->FrontController->partialRender("product-preparation-time.php",$data);?>
+                    </div>
+                </section>
+                <section id="productPrice"  class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">attach_money</i><?php echo $Core->Translator->translate("Price & Inventory");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
+                    <div id="load_product_pricelist">
+                    <?php $Core->FrontController->partialRender("product-price-list.php",$data);?>
+                    </div>
+                </section>
+                <section id="productImages" class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">photo_camera</i><?php echo $Core->Translator->translate("Product Images");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5>
+                    <div id="load_product_Images">
+                        <?php $Core->FrontController->partialRender("product-images.php",$data);?>
+                    </div>
+                </section>
+                <section id="productOptions" class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">group_work</i><?php echo $Core->Translator->translate("Product Options");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5>
+                    <div id="load_product_Options">
+                        <?php $Core->FrontController->partialRender("product-options.php",$data);?>
+                    </div>
+                    <a class="btn-flat modal-trigger" href="#modalProductOptions"><?php echo $Core->Translator->translate("Create Options");?></a>
+                    <!-- Modal Options -->
+                    <div id="modalProductOptions" class="modal">
+                      <div class="modal-content" id="load_productOptionsModal">
+                          <?php $Core->FrontController->partialRender("product-modal-productOptions.php",$data);?>
+                      </div>
+                      <div class="modal-footer">
+                      <a href="#!" class=" modal-action modal-close waves-effect waves-green btn red"><?php echo $Core->Translator->translate("Close");?></a>
+                    </div>
+                    </div>
+                </section>
+                <section id="productOrderOptions" class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">shopping_cart</i><?php echo $Core->Translator->translate("Order Options");?><span class="formRequired grey-text">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5>
+                    <p class="grey-text"><?php echo $Core->Translator->translate("Choose order options before user can purchase your product.");?></p>
+                    <div id="load_product_orderOptions">
+                    <?php $Core->FrontController->partialRender("product-order-options.php",$data);?>
+                    </div>
+                </section>
+                <section id="productExpiryDate"  class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">event_busy</i><?php echo $Core->Translator->translate("Expiry Date");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5>
+                    <div id="load_product_expiryDate">
+                        <?php $Core->FrontController->partialRender("product-expiry-date.php",$data); ?>
+                    </div>
+                </section>
+                <section id="productPriceConditions"  class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">price_check</i><?php echo $Core->Translator->translate("Price Conditions");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5>
+                    <div id="load_product_priceConditions">
+                       <?php $Core->FrontController->partialRender("product-price-conditions.php",$data); ?>
+                    </div>
+                </section>
+                <section id="productRestrictions"  class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">pan_tool</i><?php echo $Core->Translator->translate("Product Restrictions");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5>
+                    <div id="load_product_Restrictions">
+                        <?php $this->Core->FrontController->partialRender("product-restrictions.php",$data);?>
+                    </div>
+                </section>
+                <section id="productCrossSelling"  class="scrollspy section">
+                    <h5 class="h5divider"><i class="material-icons left">compare_arrows</i><?php echo $Core->Translator->translate("Cross-Selling");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5>
+                    <div id="load_product_CrossSelling">
+                        <?php $this->Core->FrontController->partialRender("product-crossselling.php",$data);?>
+                    </div>
+                </section>
+                <div class="col s12 input-field">
+                    <button type="button" class="waves-effect waves-light btn" onclick="addProduct()"><i class="material-icons right">arrow_forward</i><?php echo $Core->Translator->translate("Edit Product");?></button>
                 </div>
-            </section>
-            <section id="productVariation" class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">bubble_chart</i><?php echo $Core->Translator->translate("Product Variation");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5>
-                <div id="load_product_Variation">
-                    <?php $Core->FrontController->partialRender("product-variation.php",$data);?>
-                </div>
-            </section>
-            <section id="transportation"  class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">local_shipping</i><?php echo $Core->Translator->translate("Transportation");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
-                <p class="grey-text"><?php echo $Core->Translator->translate("Please give us information about the size and weight when product is in a package (size and weight of package with product inside).");?></p>
-                <div id="load_product_Transportation">
-                    <?php $Core->FrontController->partialRender("product-transportation.php", $data);?>
-                </div>
-            </section>
-            <section id="productPreparation" class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">timer</i><?php echo $Core->Translator->translate("Preparation Time");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
-                <p class="grey-text"><?php echo $Core->Translator->translate("After the order is accepted by the store, how long does it usually take for this product to be ready for delivery or consumption?");?></p>
-                <div id="load_product_Preparation">
-                    <?php $Core->FrontController->partialRender("product-preparation-time.php",$data);?>
-                </div>
-            </section>
-            <section id="productPrice"  class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">attach_money</i><?php echo $Core->Translator->translate("Price & Inventory");?><span class="formRequired black-text">(<?php echo $Core->Translator->translate("Required");?>)</span></h5>
-                <div id="load_product_pricelist">
-                <?php $Core->FrontController->partialRender("product-price-list.php",$data);?>
-                </div>
-            </section>
-            <section id="productImages" class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">photo_camera</i><?php echo $Core->Translator->translate("Product Images");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5>
-                <div id="load_product_Images">
-                    <?php $Core->FrontController->partialRender("product-images.php",$data);?>
-                </div>
-            </section>
-            <section id="productOptions" class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">group_work</i><?php echo $Core->Translator->translate("Product Options");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5>
-                <div id="load_product_Options">
-                    <?php $Core->FrontController->partialRender("product-options.php",$data);?>
-                </div>
-                <a class="btn-flat modal-trigger" href="#modalProductOptions"><?php echo $Core->Translator->translate("Create Options");?></a>
-                <!-- Modal Options -->
-                <div id="modalProductOptions" class="modal">
-                  <div class="modal-content" id="load_productOptionsModal">
-                      <?php $Core->FrontController->partialRender("product-modal-productOptions.php",$data);?>
-                  </div>
-                  <div class="modal-footer">
-                  <a href="#!" class=" modal-action modal-close waves-effect waves-green btn red"><?php echo $Core->Translator->translate("Close");?></a>
-                </div>
-                </div>
-            </section>
-            <section id="productOrderOptions" class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">shopping_cart</i><?php echo $Core->Translator->translate("Order Options");?><span class="formRequired grey-text">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5>
-                <p class="grey-text"><?php echo $Core->Translator->translate("Choose order options before user can purchase your product.");?></p>
-                <div id="load_product_orderOptions">
-                <?php $Core->FrontController->partialRender("product-order-options.php",$data);?>
-                </div>
-            </section>
-            <section id="productExpiryDate"  class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">event_busy</i><?php echo $Core->Translator->translate("Expiry Date");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5> 
-                <div id="load_product_expiryDate">
-                    <?php $Core->FrontController->partialRender("product-expiry-date.php",$data); ?>
-                </div>
-            </section>
-            <section id="productPriceConditions"  class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">price_check</i><?php echo $Core->Translator->translate("Price Conditions");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5> 
-                <div id="load_product_priceConditions">
-                   <?php $Core->FrontController->partialRender("product-price-conditions.php",$data); ?> 
-                </div>
-            </section>
-            <section id="productRestrictions"  class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">pan_tool</i><?php echo $Core->Translator->translate("Product Restrictions");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5> 
-                <div id="load_product_Restrictions">
-                    <?php $this->Core->FrontController->partialRender("product-restrictions.php",$data);?>
-                </div>
-            </section>
-            <section id="productCrossSelling"  class="scrollspy section">
-                <h5 class="h5divider"><i class="material-icons left">compare_arrows</i><?php echo $Core->Translator->translate("Cross-Selling");?><span class="formRequired">(<?php echo $Core->Translator->translate("Optional");?>)</span></h5> 
-                <div id="load_product_CrossSelling">
-                    <?php $this->Core->FrontController->partialRender("product-crossselling.php",$data);?>
-                </div>
-            </section>
-            <div class="col s12 input-field">
-                <button type="button" class="waves-effect waves-light btn" onclick="addProduct()"><i class="material-icons right">arrow_forward</i><?php echo $Core->Translator->translate("Create Product");?></button>
             </div>
-        </div>
-    </form>
+        </form>
         <div class="col hide-on-small-only m3 s12">
             <div class="target">
                 <ul class="section table-of-contents" style="max-width: 100%">
@@ -749,18 +750,15 @@ function getShops(){
     
     values.forEach(function(catId){
        var hasShops = false;
-       $(".shopsCategory_"+catId).map(function(){
+       $(`.shopsCategory_${catId}`).map(function(){
             if($(this).prop("checked")){
-            shops.push($(this).val());
-            hasShops = true;
+                shops.push($(this).val());
+                hasShops = true;
             }
-        });
-        if(hasShops == false){
-            // if no shops selected uncheck category
-            $("#productCategory_"+catId).prop("checked",false);
-        }else{
-            $("#productCategory_"+catId).prop("checked",true);
-        }
+       });
+       console.log('[hasShops]', hasShops);
+       // if no shops selected uncheck category
+       $("#productCategory_"+catId).prop("checked", hasShops);
     });
 
     

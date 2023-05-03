@@ -142,7 +142,8 @@ $Core = $data["Core"];
                                                     <span class="title"><?php echo $Core->Translator->translate("Default Product")?></span>
                                                 </div>
                                                 <div class="col s6 m4">
-                                                    <input type="checkbox" id="transportationVariationShop_<?php echo $shop["id"]?>_0" data-variation-id="0" class="transportationShop_<?php echo $shop["id"]?>" value="0" checked="true" onclick="checkTransportationAndStore($(this),'<?php echo $shop["id"]?>')"/>
+                                                    <!-- <?php if(!empty(array_filter($data["WholeProcuct"]["Transport"] ?? [], fn($item) => $item["variation_id"] == 0 && $item["hasTransportation"] == 1))) echo "checked"; ?> -->
+                                                    <input type="checkbox" id="transportationVariationShop_<?php echo $shop["id"]?>_0" data-variation-id="0" class="transportationShop_<?php echo $shop["id"]?>" value="0" checked onclick="checkTransportationAndStore($(this),'<?php echo $shop["id"]?>')"/>
                                                     <label for="transportationVariationShop_<?php echo $shop["id"]?>_0"><span><?php echo $Core->Translator->translate("Delivery + In Store"); ?></span></label>
                                                 </div>
                                                 <div class="col s6 m4">

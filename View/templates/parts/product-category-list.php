@@ -67,8 +67,14 @@ if(!empty($data["productCategories"])){
                                 <span class="title"><?php echo $shop[0]["info"]["name"];?></span>
                                 <p><?php echo $shop[0]["address"]["googleString"]?></p>
                                 <span class="secondary-content">
-                                    
-                                    <input type="checkbox" onClick="shopClicked(<?php echo $pc["info"]["id"]?>,<?php echo $shop[0]["info"]["id"];?>)" name="productIsInShop[]" value="['<?php echo $pc["info"]["id"]?>','<?php echo $shop[0]["info"]["id"];?>']" class="shopsCategory_<?php echo $pc["info"]["id"]?>" id="category_<?php echo $pc["info"]["id"]?>_shop_<?php echo $shop[0]["info"]["id"];?>" data-shop-id="<?php echo $shop[0]["info"]["id"];?>"/>
+                                    <input
+                                        type="checkbox"
+                                        onClick="shopClicked(<?php echo $pc["info"]["id"]?>,<?php echo $shop[0]["info"]["id"];?>)"
+                                        name="productIsInShop[]" value="['<?php echo $pc["info"]["id"]?>','<?php echo $shop[0]["info"]["id"];?>']"
+                                        class="shopsCategory_<?php echo $pc["info"]["id"]?>" id="category_<?php echo $pc["info"]["id"]?>_shop_<?php echo $shop[0]["info"]["id"];?>"
+                                        data-shop-id="<?php echo $shop[0]["info"]["id"];?>"
+                                        <?php if (in_array($pc["info"]["id"], array_map(fn($category) => $category["Info"]["id"], $data["WholeProduct"]["Categories"] ?? []))) echo "checked";?>
+                                    />
                                     <label for="category_<?php echo $pc["info"]["id"]?>_shop_<?php echo $shop[0]["info"]["id"];?>"></label>
                                 </span>
                             </li>

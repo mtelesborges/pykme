@@ -1179,8 +1179,8 @@ function addProduct(){
         images.push(varImg[0]);
     }
     product.Images = images;
-    
-    
+    product.id = $('#product_id').val();
+
     /////////////////////////////////////////////////////////
     sendProductRegistration(product);
 }
@@ -1266,11 +1266,14 @@ function uploadVimages(id,variations){
 }
 function sendProductRegistration(product){
     $("#overallLoader").show();
-    var data = {
+    const data = {
         product:JSON.stringify(product)
     };
+
+    const action = product.id ? 'updateProduct' : 'registerProduct';
+
     $.ajax({
-        url:"/merchant/registerProduct",
+        url:`/merchant/${action}`,
         type:"post",
         data:data,
         success: function (response) {

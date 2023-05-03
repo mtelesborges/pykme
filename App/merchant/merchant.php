@@ -38,6 +38,7 @@ class merchant
         $data["priceConditions"] = $p->getAllPriceConditions();
         $data["productPhysicalInfo"] = $p->getProductPhysicalInfo($productId);
         $data["preparationTime"] = $p->getProductPreparationTime($productId, 0);
+        $data["products"] = $p->getProductsCrossSelling();
         $this->renderEditProduct($data);
     }
 
