@@ -16,6 +16,28 @@ class api{
         $this->Core = $Core;
     }
 
+    public function VIEW_activeDeliveries() {
+        $method = $_SERVER['REQUEST_METHOD'];
+        $methodsAlloweds = [self::GET];
+
+        if (!in_array($method, $methodsAlloweds)) {
+            http_response_code(405);
+            return;
+        }
+
+        $driverId = $_GET["driver_id"] ?? null;
+
+        $db = $this->Core->getDB();
+
+        $sql = <<<SQL
+            select o.id as order_id, o.shop_id, s.name as shop_name, s.lat, s.lng from orders o inner join shops s on s.id = o.shop_id where o.driver_id = ?
+        SQL;
+
+        $deliveries = $db->query($sql, array("i", $driverId), false);
+
+        echo json_encode($deliveries, JSON_NUMERIC_CHECK);
+    }
+
     public function VIEW_deliveries() {
 
         $method = $_SERVER['REQUEST_METHOD'];
@@ -43,6 +65,8 @@ class api{
                     select
                         o.id as order_id,
                         s.id as shop_id,
+                        s.lat,
+                        s.lng,
                         s.name as shop_name,
                         (select count(1) from orders_products op where op.order_id= o.id) as quantity_product,
                         
@@ -75,12 +99,12 @@ class api{
                     from 
                         cte
                     ) as a
-            ) select order_id, shop_id, shop_name, quantity_product, distance_driver_shop, distance_order_shop, distance from cte_distance order by distance limit 20
+            ) select order_id, shop_id, shop_name, quantity_product, distance_driver_shop, distance_order_shop, distance, lat, lng from cte_distance order by distance limit 20
         SQL;
 
         $deliveries = $db->query($sql, array("i", 1), false);
 
-        echo json_encode($deliveries);
+        echo json_encode($deliveries, JSON_NUMERIC_CHECK);
     }
 
     public function VIEW_startDelivery() {
