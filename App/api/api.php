@@ -285,8 +285,12 @@ class api{
 
         if ($method == self::GET) {
             $driverId = $_GET["driver_id"] ?? null;
+            $userId = $_GET["user_id"] ?? null;
+
             if($driverId) {
                 $vehicles = $db->query("SELECT * FROM vehicles WHERE driver_id = ?", array("i", $driverId), false);
+            } elseif($userId) {
+                $vehicles = $db->query("SELECT v.* FROM vehicles v inner join drivers d on d.id = v.driver_id WHERE d.user_id = ?", array("i", $userId), false);
             } else {
                 $vehicles = $db->query("SELECT * FROM vehicles WHERE 1=?", array("i", 1), false);
             }
