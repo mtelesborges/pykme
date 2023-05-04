@@ -260,7 +260,12 @@ class api{
         }
 
         if ($method == self::GET) {
-            $vehicles = $db->query("SELECT * FROM vehicles WHERE 1=?", array("i", 1), false);
+            $driverId = $_GET["driver_id"] ?? null;
+            if($driverId) {
+                $vehicles = $db->query("SELECT * FROM vehicles WHERE driver_id = ?", array("i", $driverId), false);
+            } else {
+                $vehicles = $db->query("SELECT * FROM vehicles WHERE 1=?", array("i", 1), false);
+            }
             http_response_code(200);
             echo json_encode($vehicles, JSON_NUMERIC_CHECK);
             return;
