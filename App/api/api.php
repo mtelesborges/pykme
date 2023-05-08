@@ -30,10 +30,12 @@ class api{
         $db = $this->Core->getDB();
 
         $sql = <<<SQL
-            select o.id as order_id, o.shop_id, s.name as shop_name, s.lat, s.lng from orders o inner join shops s on s.id = o.shop_id where o.driver_id = ?
+            select o.id as order_id, o.shop_id, s.name as shop_name, s.lat, s.lng from orders o inner join shops s on s.id = o.shop_id where o.driver_id = ? and (o.delivery_finished_at is null or o.delivery_finished_at = '')
         SQL;
 
         $deliveries = $db->query($sql, array("i", $driverId), false);
+
+        if(empty($deliveries)) return [];
 
         echo json_encode($deliveries, JSON_NUMERIC_CHECK);
     }
@@ -167,10 +169,10 @@ class api{
             return;
         }
 
-        $data = json_decode(file_get_contents('php://input'));
+        $data = json_decode(file_get_contents('php://input'), true);
 
-        $driverId = $data["driver_id"];
-        $orderId = $data["order_id"];
+        $driverId = $data["driver_id"] ?? null;
+        $orderId = $data["order_id"] ?? null;
 
         if(empty($driverId)) {
             http_response_code(422);
@@ -190,7 +192,7 @@ class api{
             update orders set driver_id = ?, delivery_finished_at = CURRENT_TIMESTAMP where id = ?
         SQL;
 
-        $db->query($sql, array('ii', $driverId, $orderId));
+        $db->query($sql, array('ii', $driverId, $orderId), true);
 
         http_response_code(204);
     }
