@@ -3,20 +3,88 @@
 use Firebase\JWT\JWT;
 class api{
     public Core $Core;
-    public $secret = 'bGS6lzFqvvSQ8ALbOxatm7/Vk7mLGTFqaS34Q4oR1ew=';
-    public $userId;
-
+    public const SECRET = 'bGS6lzFqvvSQ8ALbOxatm7/Vk7mLGTFqaS34Q4oR1ew=';
     private const GET = 'GET';
     private const POST = 'POST';
     private const PUT = 'PUT';
     private const TAXI = 'TAXI';
     private const PACKAGE = 'PACKAGE';
+    private const ALGORITHM = 'HS512';
 
     public function __construct($Core) {
         $this->Core = $Core;
     }
 
+    public function VIEW_login() {
+
+        require_once('Vendors/Composer/vendor/autoload.php');
+
+        $method = $_SERVER['REQUEST_METHOD'];
+        $methodsAlloweds = [self::POST];
+
+        if (!in_array($method, $methodsAlloweds)) {
+            http_response_code(405);
+            return;
+        }
+
+        $db = $this->Core->getDB();
+
+        $post = json_decode(file_get_contents('php://input'), true);
+
+        $data = $db->query("SELECT * FROM user WHERE username=? LIMIT 1",array("s", $post['username']),false);
+
+        if(empty($data)) {
+            echo json_encode(["message" => "Picker not found."]);
+            http_response_code(401);
+            return;
+        }
+
+        $picker = $data[0];
+
+        if(!password_verify($post['password'], $picker['password'])) {
+            echo json_encode(["message" => "Invalid password."]);
+            http_response_code(401);
+            return;
+        }
+
+        $issuedAt   = new DateTimeImmutable();
+        $expire     = $issuedAt->modify('+2880 minutes')->getTimestamp();   // 2 days
+        $serverName = "pykme.com";
+
+        $payload = [
+            'iat'       => $issuedAt->getTimestamp(),         // Issued at: time when the token was generated
+            'iss'       => $serverName,                       // Issuer
+            'nbf'       => $issuedAt->getTimestamp(),         // Not before
+            'exp'       => $expire,                           // Expire
+            'username'  => $post['username'],                         // User name
+            'userId'    => $picker["id"]
+        ];
+
+        $token = JWT::encode(
+            $payload,
+            self::SECRET,
+            self::ALGORITHM
+        );
+
+        echo json_encode([
+            "token" => $token,
+            "user" => [
+                "id" => $picker["id"],
+                "name" =>  $picker["name"],
+                "username" =>  $picker["username"],
+            ]
+        ]);
+
+    }
+
     public function VIEW_activeDeliveries() {
+        $token = $this->checkToken();
+
+        if(!$token){
+            http_response_code(401);
+            return;
+        }
+
         $method = $_SERVER['REQUEST_METHOD'];
         $methodsAlloweds = [self::GET];
 
@@ -25,22 +93,37 @@ class api{
             return;
         }
 
-        $driverId = $_GET["driver_id"] ?? null;
-
         $db = $this->Core->getDB();
 
         $sql = <<<SQL
-            select o.id as order_id, o.shop_id, s.name as shop_name, s.lat, s.lng from orders o inner join shops s on s.id = o.shop_id where o.driver_id = ? and (o.delivery_finished_at is null or o.delivery_finished_at = '')
+            select
+                o.id as order_id,
+                o.shop_id,
+                s.name as shop_name,
+                s.lat,
+                s.lng
+            from
+                            orders  o
+                inner join  shops   s on s.id = o.shop_id
+                inner join  drivers d on d.id = o.driver_id
+            where
+                    d.user_id = ?
+              and (o.delivery_finished_at is null or o.delivery_finished_at = '')
         SQL;
 
-        $deliveries = $db->query($sql, array("i", $driverId), false);
+        $deliveries = $db->query($sql, array("i", $token->userId), false);
 
-        if(empty($deliveries)) return [];
-
-        echo json_encode($deliveries, JSON_NUMERIC_CHECK);
+        echo json_encode($deliveries ?? [], JSON_NUMERIC_CHECK);
     }
 
     public function VIEW_deliveries() {
+
+        $token = $this->checkToken();
+
+        if(!$token){
+            http_response_code(401);
+            return;
+        }
 
         $method = $_SERVER['REQUEST_METHOD'];
         $methodsAlloweds = [self::GET];
@@ -110,6 +193,13 @@ class api{
     }
 
     public function VIEW_startDelivery() {
+        $token = $this->checkToken();
+
+        if(!$token){
+            http_response_code(401);
+            return;
+        }
+
         $method = $_SERVER['REQUEST_METHOD'];
         $methodsAlloweds = [self::PUT];
 
@@ -121,46 +211,68 @@ class api{
         $data = json_decode(file_get_contents('php://input'), true);
 
         if(empty($data)) {
-            http_response_code(422);
+            http_response_code(403);
             echo json_encode(["message" => "Driver is required."]);
             return;
         }
 
-        $driverId = $data["driver_id"] ?? null;
         $orderId = $data["order_id"] ?? null;
         $vehicleId = $data["vehicle_id"] ?? null;
 
-        if(empty($driverId)) {
-            http_response_code(422);
-            echo json_encode(["message" => "Driver is required."]);
-            return;
-        }
-
         if(empty($orderId)) {
-            http_response_code(422);
+            http_response_code(403);
             echo json_encode(["message" => "Order is required."]);
             return;
         }
 
         if(empty($vehicleId)) {
-            http_response_code(422);
+            http_response_code(403);
             echo json_encode(["message" => "Vehicle is required."]);
             return;
         }
 
         $db = $this->Core->getDB();
 
+        $isStarted = $db->query("select 1 from orders where id =? and delivery_started_at is not null", array('i', $orderId), false);
+
+        if(!empty($isStarted)) {
+            http_response_code(403);
+            echo json_encode(["message" => "Order already started."]);
+            return;
+        }
+
+        $hasActiveOrder = $db->query("select 1 from orders where driver_id = (select id from drivers where user_id = ?) and delivery_started_at is not null and delivery_finished_at is null", array('i', $token->userId), false);
+
+        if(!empty($hasActiveOrder)) {
+            http_response_code(403);
+            echo json_encode(["message" => "Driver has active order."]);
+            return;
+        }
+
         $sql = <<<SQL
-            update orders set driver_id = ?, vehicle_id = ?, delivery_started_at = CURRENT_TIMESTAMP where id = ?
+            update
+                orders
+            set 
+                driver_id = (select id from drivers where user_id = ?),
+                vehicle_id = ?,
+                delivery_started_at = CURRENT_TIMESTAMP
+            where id = ?
         SQL;
 
-        $db->query($sql, array('iii', $driverId, $vehicleId, $orderId), true);
+        $db->query($sql, array('iii', $token->userId, $vehicleId, $orderId), true);
 
         http_response_code(204);
     }
 
 
     public function VIEW_finishDelivery() {
+        $token = $this->checkToken();
+
+        if(!$token){
+            http_response_code(401);
+            return;
+        }
+
         $method = $_SERVER['REQUEST_METHOD'];
         $methodsAlloweds = [self::PUT];
 
@@ -171,107 +283,99 @@ class api{
 
         $data = json_decode(file_get_contents('php://input'), true);
 
-        $driverId = $data["driver_id"] ?? null;
         $orderId = $data["order_id"] ?? null;
 
-        if(empty($driverId)) {
-            http_response_code(422);
-            echo json_encode(["message" => "Driver is required."]);
-            return;
-        }
-
         if(empty($orderId)) {
-            http_response_code(422);
+            http_response_code(403);
             echo json_encode(["message" => "Order is required."]);
             return;
         }
 
         $db = $this->Core->getDB();
 
+        $isStarted = $db->query("select 1 from orders where id =? and delivery_started_at is not null", array('i', $orderId), false);
+
+        if(empty($isStarted)) {
+            http_response_code(403);
+            echo json_encode(["message" => "Order is not started."]);
+            return;
+        }
+
+        $isFinished = $db->query("select 1 from orders where id =? and delivery_finished_at is not null", array('i', $orderId), false);
+
+        if(!empty($isFinished)) {
+            http_response_code(403);
+            echo json_encode(["message" => "Order already finished."]);
+            return;
+        }
+
+        $isAllowed = $db->query("select 1 from orders where driver_id = (select id from drivers where user_id = ?) and id = ?", array('ii', $token->userId, $orderId), false);
+
+        if(empty($isAllowed)) {
+            http_response_code(403);
+            return;
+        }
+
         $sql = <<<SQL
-            update orders set driver_id = ?, delivery_finished_at = CURRENT_TIMESTAMP where id = ?
+            update orders set driver_id = (select id from drivers where user_id = ?), delivery_finished_at = CURRENT_TIMESTAMP where id = ?
         SQL;
 
-        $db->query($sql, array('ii', $driverId, $orderId), true);
+        $db->query($sql, array('ii', $token->userId, $orderId), true);
 
         http_response_code(204);
     }
 
-    public function VIEW_drivers() {
-        $db = $this->Core->getDB();
+    public function VIEW_cancelDelivery() {
+        $token = $this->checkToken();
+
+        if(!$token){
+            http_response_code(401);
+            return;
+        }
 
         $method = $_SERVER['REQUEST_METHOD'];
-        $methodsAlloweds = [self::GET, self::POST];
+        $methodsAlloweds = [self::PUT];
 
         if (!in_array($method, $methodsAlloweds)) {
             http_response_code(405);
             return;
         }
 
-        if ($method == self::GET) {
-            $vehicles = $db->query("SELECT * FROM drivers WHERE 1=?", array("i", 1), false);
-            http_response_code(200);
-            echo json_encode($vehicles, JSON_NUMERIC_CHECK);
+        $data = json_decode(file_get_contents('php://input'), true);
+
+        $orderId = $data["order_id"] ?? null;
+
+        if(empty($orderId)) {
+            http_response_code(403);
+            echo json_encode(["message" => "Order is required."]);
             return;
         }
 
-        $data = json_decode(file_get_contents('php://input'));
+        $db = $this->Core->getDB();
 
-        $username       = $data->username       ?? null;
-        $name           = $data->name           ?? null;
-        $password       = $data->password       ?? null;
+        $isAllowed = $db->query("select 1 from orders where driver_id = (select id from drivers where user_id = ?) and id = ?", array('ii', $token->userId, $orderId), false);
 
-        $user = $db->query("SELECT * FROM `user` WHERE username = ?", array('s', $username), false)[0];
-
-        if ($method == 'POST') {
-            if (empty($username)) {
-                http_response_code(422);
-                echo json_encode(["message" => "Username is required."]);
-                return;
-            }
-
-            if (empty($name)) {
-                http_response_code(422);
-                echo json_encode(["message" => "Name is required."]);
-                return;
-            }
-
-            if (empty($password) && empty($user)) {
-                http_response_code(422);
-                echo json_encode(["message" => "Password is required."]);
-                return;
-            }
-
-            if (!empty($user)) {
-                $userId = $user["id"];
-                $driver = $db->query("select * from drivers where user_id = ?", array('i', $userId), false)[0];
-
-                if(!empty($driver)) {
-                    http_response_code(422);
-                    echo json_encode(["message" => "Driver already exists."]);
-                    return;
-                }
-
-            } else {
-                $sql = <<<SQL
-                    INSERT INTO user(username, password, `join`) VALUES (?, ?, CURRENT_DATE);
-                SQL;
-                $db->query($sql, array('ss', $username, password_hash($password, PASSWORD_DEFAULT)), true);
-                $userId = $db->insert_id;
-            }
-
-            $sql = <<<SQL
-                INSERT INTO drivers (user_id, `name`) VALUES (?, ?);
-            SQL;
-
-            $db->query($sql, array('ss', $userId, $name), true);
-
-            http_response_code(201);
-            echo json_encode(["id" => $db->insert_id]);
-
+        if(empty($isAllowed)) {
+            http_response_code(403);
+            echo json_encode(["message" => "Not allowed."]);
+            return;
         }
 
-        // password_hash($pass_1, PASSWORD_DEFAULT)
+        $isFinished = $db->query("select 1 from orders where  id = ? and delivery_finished_at is not null", array('i', $orderId), false);
+
+        if(!empty($isFinished)) {
+            http_response_code(403);
+            echo json_encode(["message" => "Order is finished."]);
+            return;
+        }
+
+        $sql = <<<SQL
+            update orders set driver_id = null, delivery_started_at = null where id = ?
+        SQL;
+
+        $db->query($sql, array('i', $orderId), true);
+
+        http_response_code(204);
     }
 
     public function VIEW_vehicles() {
@@ -371,117 +475,23 @@ class api{
         echo json_encode($vehicles, JSON_NUMERIC_CHECK);
     }
     
-    public function VIEW_pickers($action){
-        $db = $this->Core->getDB();
-        
-        if($action == "checkLogin"){
-            if($this->checkToken()){
-                echo json_encode("valid");
-            }
-        }
-        
-        if($action == "logout"){
-            if($this->checkToken()){
-                $db->query("UPDATE pickerUser SET online=0 WHERE id=?",array("i",$this->userId),true);
-            }
-        }
-        
-        if($action == "login"){
-            require_once('Vendors/Composer/vendor/autoload.php');
-            $post = json_decode(file_get_contents('php://input'));
-            $picker = $db->query("SELECT `id` FROM pickerUser WHERE mobile=? AND password=? LIMIT 1",array("ss",$post->{'mobile'},$post->{'password'}),false);
-            if($picker){
-                $secretKey  = $this->secret;
-                $issuedAt   = new DateTimeImmutable();
-                $expire     = $issuedAt->modify('+2880 minutes')->getTimestamp();   // 2 days  
-                $serverName = "pykme.com";
-                $username   = $post->{'mobile'};                                           
-
-                $data = [
-                    'iat'       => $issuedAt->getTimestamp(),         // Issued at: time when the token was generated
-                    'iss'       => $serverName,                       // Issuer
-                    'nbf'       => $issuedAt->getTimestamp(),         // Not before
-                    'exp'       => $expire,                           // Expire
-                    'userName'  => $username,                         // User name
-                    'userId'    => $picker[0]["id"]
-                ];
-                
-                echo json_encode(JWT::encode(
-                        $data,
-                        $secretKey,
-                        'HS512'
-                    ));    
-            }   
-        }
-        
-        if($action == "position"){
-            $post = json_decode(file_get_contents('php://input'));
-            if($this->checkToken() && $post){
-                $db->query("UPDATE pickerUser SET position=? ,last_log=NOW(), ready=1 WHERE id=?",array("si",$post->{'lt'}.",".$post->{'lg'},$this->userId),true);
-            }
-        }
-        
-        if($action == "end-position"){
-             if($this->checkToken()){
-                 echo json_encode("trackend");
-                $db->query("UPDATE pickerUser SET ready=0 WHERE id=?",array("i",$this->userId),true);
-                
-            }
-        }
-        
-        if($action == "basic-info"){
-            if($this->checkToken()){
-                $picker = $db->query("SELECT id,mobile FROM pickerUser WHERE id=? LIMIT 1",array("i",$this->userId),false);
-                echo json_encode($picker[0]);
-            }else{
-                
-            }
-        }
-    }
-    
     private function checkToken(){
         require_once('Vendors/Composer/vendor/autoload.php');
-        if (! preg_match('/Bearer\s(\S+)/', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
-            echo json_encode("expired");
-            return false;
-            /*header('HTTP/1.0 400 Bad Request');
-            echo 'Token not found in request';*/
+
+        if (!preg_match('/Bearer\s(\S+)/', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
+            return;
         }
+
         $jwt = $matches[1];
-        if (! $jwt) {
-            // No token was able to be extracted from the authorization header
-            echo json_encode("expired");
-            return false;
-            /*
-            header('HTTP/1.0 400 Bad Request');
-            echo 'Token not found in request';
-            exit;
-             */
+
+        if (!$jwt) {
+            return;
         }
-        $secretKey  = $this->secret;
+
         try {
-        $token = JWT::decode($jwt, $secretKey, ['HS512']);
-        } catch (Exception $e) {
-            echo json_encode("expired");
-            return false;
-            die();
-        }
-        $now = new DateTimeImmutable();
-        $serverName = "pykme.com";
-
-        if ($token->iss !== $serverName ||
-            $token->nbf > $now->getTimestamp() ||
-            $token->exp < $now->getTimestamp())
-        {
-            echo json_encode("expired");
-            return false;
-        }else{
-            $this->userId = $token->userId;
-            return true;
-        }
-
+            $token = JWT::decode($jwt, self::SECRET, [self::ALGORITHM]);
+            return $token;
+        } catch (Exception $e) {}
     }
-        
-   
 }
 
