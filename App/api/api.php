@@ -3,7 +3,7 @@
 use Firebase\JWT\JWT;
 class api{
     public Core $Core;
-    public const SECRET = 'bGS6lzFqvvSQ8ALbOxatm7/Vk7mLGTFqaS34Q4oR1ew=';
+    private const SECRET = 'bGS6lzFqvvSQ8ALbOxatm7/Vk7mLGTFqaS34Q4oR1ew=';
     private const GET = 'GET';
     private const POST = 'POST';
     private const PUT = 'PUT';
@@ -31,7 +31,7 @@ class api{
 
         $post = json_decode(file_get_contents('php://input'), true);
 
-        $data = $db->query("SELECT * FROM user WHERE username=? LIMIT 1",array("s", $post['username']),false);
+        $data = $db->query("SELECT * FROM users WHERE username=? LIMIT 1",array("s", $post['username']),false);
 
         if(empty($data)) {
             echo json_encode(["message" => "Picker not found."]);
