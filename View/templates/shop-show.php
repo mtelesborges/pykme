@@ -141,26 +141,96 @@ $mode = "Delivery";
 
             </div>
         </div>
-        <div class="col l4 xl3 hide-on-med-and-down fullHeight" id="sidebarShop">
+        <div class="col l4 xl3 hide-on-med-and-down fullHeight" id="sidebarShop" style="padding: 10rem 0; height: calc(100% - 70px); overflow-y: auto;">
             <div class="col s12 sidebarShop">
                 <h6>
                     <i class="material-icons left">directions_walk</i><?php echo $Core->Translator->translate("Pickers"); ?>
                 </h6>
             </div>
             <div class="col s12 sidebarShop">
+                <div class="row">
+                    <form class="col s12" style="padding: 0" id="order">
+                        <div class="row" style="margin-bottom: 0">
+                            <div class="input-field col s12" style="padding: 0">
+                                <input id="street" name="street" type="text" class="validate" required>
+                                <label for="street">Street</label>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-bottom: 0">
+                            <div class="input-field col s12" style="padding: 0">
+                                <input id="neighborhood" name="neighborhood" type="text" class="validate" required>
+                                <label for="neighborhood">Neighborhood</label>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-bottom: 0">
+                            <div class="input-field col s6" style="padding: 0">
+                                <input id="zipCode" name="zipCode" type="text" class="validate" required>
+                                <label for="zipCode">Zip code</label>
+                            </div>
+                            <div class="input-field col s6" style="padding: 0">
+                                <input id="city" name="city" type="text" class="validate" required>
+                                <label for="city">City</label>
+                            </div>
+                        </div>
+                        <div class="row" style="margin-bottom: 0">
+                            <div class="input-field col s12" style="padding: 0">
+                                <input id="complement" name="complement" type="text" class="validate" required>
+                                <label for="complement">Complement</label>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <p style="margin-bottom: 0;">
+                                <input class="with-gap" name="group1" type="radio" id="delivery" checked required/>
+                                <label for="delivery">Delivery</label>
+                            </p>
+                            <p>
+                                <input class="with-gap" name="group1" type="radio" id="takeaway" required/>
+                                <label for="takeaway">Takeaway</label>
+                            </p>
+                        </div>
+                        <div class="row select-container-driver">
+                            <div class="input-field col s12">
+                                <select id="driver">
+                                    <option value="" disabled selected>Choose your option</option>
+                                </select>
+                                <label>Select a picker</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
                 <h6><i class="material-icons left">shopping_cart</i><span style="display: flex; justify-content: space-between"><?php echo $Core->Translator->translate("Cart"); ?> <span id="price"></span></span></h6>
                 <ul id="cartItems">
                     <li style="display: flex; align-items: flex-end; justify-content: space-between; width: 100%">
                         <div style="display: flex; align-items: flex-end">
                             <div style="width: 2rem; margin-right: 1em;">
-                                <input value="1" type="number" min="1">
+                                <input name="cart-item" value="1" type="number" min="1">
                             </div>
                             <span>Cart item</span>
                         </div>
                         <button class="btn"><i class="material-icons">delete</i></button>
                     </li>
                 </ul>
-                <strong></strong>
+                <div>
+                    <span style="float: left; margin-left: 0; display: none;" class="new badge gren" data-badge-caption="<?php echo $Core->Translator->translate("The driver has accepted the order and is on his way to the store."); ?>" id="orderAccepted"></span>
+                    <span style="float: left; margin-left: 0; display: none;" class="new badge red" data-badge-caption="<?php echo $Core->Translator->translate("The driver rejected the order, try with another one."); ?>" id="orderRejected"></span>
+                </div>
+                <div id="loading" style="display: none; align-items: center">
+                    <div class="preloader-wrapper small active" >
+                        <div class="spinner-layer spinner-green-only">
+                            <div class="circle-clipper left">
+                                <div class="circle"></div>
+                            </div><div class="gap-patch">
+                                <div class="circle"></div>
+                            </div><div class="circle-clipper right">
+                                <div class="circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <span style="padding-left: 1em; width: calc(100% - 50px);"><?php echo $Core->Translator->translate("Waiting for the driver to accept the order, this can take up to 5 minutes."); ?></span>
+                </div>
+                <div>
+                    <button class="btn" onclick="submitCart()" id="submitCart" style="margin-top: 2rem;" disabled><i class="material-icons">delete</i><?php echo $Core->Translator->translate("Create order"); ?></button>
+                </div>
             </div>
         </div>
     </div>
@@ -441,7 +511,7 @@ $mode = "Delivery";
             disableDefaultUI: true,
             mapTypeId: google.maps.MapTypeId.ROADMAP
         });
-        console.log('[lat]', <?php echo $Core->Tracker->lat ?>);
+
         // directions settings
         var waypts = [];
         waypts.push({
@@ -646,11 +716,11 @@ $mode = "Delivery";
             li.id = `cartItem-${index}`
 
             li.innerHTML = `
-                <div style="display: flex; align-items: flex-end">
+                <div style="display: flex; align-items: flex-end" data-cart-item>
                     <div style="width: 2rem; margin-right: 1em;">
-                        <input value="${item.quantity}" type="number" min="1" onchange="addQuantity(this, ${index})">
+                        <input data-cart-item-quantity data-cart-item-amount="${item.price}" value="${item.quantity}" type="number" min="1" onchange="addQuantity(this, ${index})">
                     </div>
-                    <span>${item.title}</span>
+                    <span data-cart-item-id="${item.id}">${item.title}</span>
                 </div>
                 <button class="btn" onclick="removeOfCart(${index})"><i class="material-icons">delete</i></button>
             `;
@@ -667,6 +737,7 @@ $mode = "Delivery";
         const quantity = +el.value;
         cart[shopName].at(index).quantity = quantity;
         cart[shopName].at(index).price = +cart[shopName].at(index).unit_price * quantity;
+        el.setAttribute('data-cart-item-amount', +cart[shopName].at(index).unit_price * quantity);
         updatePrice(cart[shopName])
         localStorage.setItem(CART_KEY, JSON.stringify(cart));
     }
@@ -696,6 +767,150 @@ $mode = "Delivery";
         cart[shopName] ??= [];
         renderCart(cart[shopName]);
     })();
+
+    function getPickers() {
+        const lat = <?php echo $Core->Tracker->lat ?? 0 ?>;
+        const lng = <?php echo $Core->Tracker->lng ?? 0 ?>;
+        const url = `/api/avaiableDrivers/?lat=${lat}&lng=${lng}`;
+        fetch(url)
+            .then(async data => {
+                const drivers = await data.json();
+                const select = document.getElementById("driver");
+                drivers.forEach(driver => {
+                    // Create a new option element
+                    const option = document.createElement("option");
+                    option.value = `${driver.driver_id},${driver.vehicle_id}`;
+                    option.text = `($${driver.price}) ${driver.driver_name}`;
+
+                    // Append the option to the select element
+                    select.appendChild(option);
+                });
+                $("#driver").material_select();
+            });
+    }
+
+    getPickers();
+
+    const fields = {};
+
+    fields['transportationType'] = 'DELIVERY';
+
+    document.getElementById("takeaway").addEventListener('change', function(_event) {
+        _event.stopPropagation();
+        const select = document.querySelector(".select-container-driver");
+        const display = _event.target.checked;
+        if (display) {
+            fields['transportationType'] = 'TAKEWAY';
+            select.style.display = 'none';
+        }
+    })
+
+    document.getElementById("delivery").addEventListener('change', function(_event) {
+        _event.stopPropagation();
+        const select = document.querySelector(".select-container-driver");
+        const display = _event.target.checked;
+        if (display) {
+            fields['transportationType'] = 'DELIVERY';
+            select.style.display = 'block';
+        }
+    });
+
+    const shopId = "<?php echo $shop['info']['id'] ?>";
+    const lat = <?php echo $Core->Tracker->lat ?? 0 ?>;
+    const lng = <?php echo $Core->Tracker->lng ?? 0 ?>;
+
+    fields['shopId'] = shopId;
+    fields['geo'] = {
+        lat, lng
+    }
+
+    const _submitCart = document.getElementById('submitCart');
+    const _loading = document.getElementById('loading');
+    const _orderAccepted = document.getElementById('orderAccepted');
+    const _orderRejected = document.getElementById('orderRejected');
+
+    const driver = $("#driver");
+    driver.material_select();
+    fields['driverId'] = undefined;
+    fields['vehicleId'] = undefined;
+    driver.on('change', function (e) {
+        const values = e.target.value?.split(',')
+        fields['driverId'] = values[0];
+        fields['vehicleId'] = values[1];
+        const invalidFields = Object.values(fields).filter(field => !field).length;
+        invalidFields ?  _submitCart.setAttribute('disabled', '') : _submitCart.removeAttribute('disabled');
+    });
+
+    document
+        .getElementById('order')
+        .querySelectorAll('input')
+        .forEach(input => {
+            const name = input.getAttribute('name');
+            if(input.hasAttribute('required') && !name.includes('group')) {
+                fields[name] = undefined;
+                input.addEventListener('change', _event => {
+                    _event.stopPropagation();
+                    const value = input.value;
+                    fields[name] = value;
+                    const invalidFields = Object.values(fields).filter(field => !field).length;
+                    invalidFields ?  _submitCart.setAttribute('disabled', '') : _submitCart.removeAttribute('disabled');
+                });
+            }
+        });
+
+    function submitCart() {
+        const cart = [];
+        document
+            .querySelectorAll('[data-cart-item]')
+            .forEach(item => {
+                const quantity = item.querySelector('[data-cart-item-quantity]').value;
+                const amount =  item.querySelector('[data-cart-item-amount]').getAttribute('data-cart-item-amount');
+                const _id = item.querySelector('[data-cart-item-id]').getAttribute('data-cart-item-id');
+                cart.push({quantity, amount, id: _id});
+            });
+
+        _submitCart.setAttribute('disabled', '');
+
+        fetch('/api/createOrder/', {
+            method: 'POST',
+            body: JSON.stringify({cart, ...fields})
+        })
+            .then(async response => {
+                const data = await response.json();
+                _loading.style.display = 'flex';
+                const { order_id } = data;
+                let intervalCounter = 0;
+                const interval = setInterval(() => {
+                    intervalCounter++;
+                    if (intervalCounter === 50) {
+                        _orderRejected.style.display = 'block';
+                        clearInterval(interval);
+                        return;
+                    }
+
+                    fetch(`/api/findOrder/?id=${order_id}`)
+                        .then(async response => {
+                            const data = await response.json();
+
+                            if (data.status === "DRIVER_ACCEPTED") {
+                                _loading.style.display = 'none';
+                                _orderAccepted.style.display = 'block';
+                                clearInterval(interval);
+                            }
+
+                            if (data.status === "DRIVER_REJECTED") {
+                                _loading.style.display = 'none';
+                                _orderRejected.style.display = 'block';
+                                _submitCart.removeAttribute('disabled');
+                                clearInterval(interval);
+                            }
+                        })
+                }, 10000);
+            })
+            .catch( _ => {
+                _submitCart.removeAttribute('disabled');
+            });
+    }
 
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC00WRtBgVw_2E2zJM0EwR9uiyW6uZ03bM&callback=initMap" async></script>
