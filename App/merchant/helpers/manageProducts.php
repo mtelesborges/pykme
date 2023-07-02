@@ -1850,11 +1850,11 @@ class manageProducts
         }
     }
 
-    public function getAllOptions()
+    public function getAllOptions($merchantId = null)
     {
         $db = $this->Core->getDB();
 
-        $optionsBundle = $db->query("SELECT * FROM productOptionBundle WHERE merchant_id=? AND status='active'", array("i", $_SESSION["merchant"]["merchantId"]), false);
+        $optionsBundle = $db->query("SELECT * FROM productOptionBundle WHERE merchant_id=? AND status='active'", array("i", $merchantId ?? $_SESSION["merchant"]["merchantId"]), false);
 
         $Bundles = $this->getOptionsBundleData($optionsBundle);
 

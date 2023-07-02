@@ -805,7 +805,7 @@ SHOP SHOW
 #filterHeader{
     background: #fff;
     padding: 0;
-    z-index: 10000;
+    z-index: 1;
     border-top:2px solid #fafafa;
 }
 #filterHeader .select-wrapper input.select-dropdown{

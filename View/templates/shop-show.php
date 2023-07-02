@@ -269,7 +269,6 @@ $mode = "Delivery";
                 $("#product-loop").html(data);
             },
             error: function (e) {
-                console.log(e);
                 alert("<?php echo $Core->Translator->translate("Error, please contact support@pykme.com")?>");
             }
         });
@@ -632,7 +631,6 @@ $mode = "Delivery";
             }, (result, status) => {
                 if (status !== 'OK') return alert(`Error: ${status}`);
                 directionsRenderer.setDirections(result);
-                console.log(result);
                 var totalDistance = 0;
                 var totalDuration = 0;
                 var legs = result.routes[0].legs;
@@ -645,7 +643,6 @@ $mode = "Delivery";
                 var price = distance * perDistance;
                 $("#estimatePricePicker_" + pickerid).html(price);
                 $("#estimateTimePicker_" + pickerid).html(Math.round(totalDuration / 60) + " Min.");
-                console.log(totalDistance);
             });
         }
 
@@ -674,7 +671,7 @@ $mode = "Delivery";
         container: undefined, // ex. 'body' will append picker to body
     });*/
 
-    function addToCart(id, title, price) {
+    function addToCart(id, title, price, option) {
 
         const CART_KEY = 'cart'
 
@@ -686,14 +683,35 @@ $mode = "Delivery";
 
         cart[shopName] ??= [];
 
-        cart[shopName].push({
-            id,
-            quantity: 1,
-            title,
-            unit_price: +price,
-            price: +price,
-            index: cart[shopName].length
-        });
+        const hasItemInCart = cart[shopName].some(item => item.id === id);
+
+        if (!hasItemInCart) {
+            cart[shopName].push({
+                id,
+                quantity: title ? 1 : 0,
+                title,
+                unit_price: +price,
+                price: +price,
+                index: cart[shopName].length,
+                options: option ? [option] : []
+            });
+        } else {
+            const cartItem = cart[shopName].find(item => item.id === id);
+            const cartItemIndex = cart[shopName].findIndex(item => item.id === id);
+
+            if (title) {
+                cartItem.quantity += 1;
+                cartItem.price = cartItem.unit_price * cartItem.quantity;
+            }
+
+            cartItem.options = cartItem?.options?.filter(item => item.id !== option?.id);
+
+            if (option?.checked === true) {
+                cartItem.options.push(option);
+            }
+
+            cart[shopName][cartItemIndex] = cartItem;
+        }
 
         localStorage.setItem(CART_KEY, JSON.stringify(cart));
 
@@ -707,7 +725,7 @@ $mode = "Delivery";
 
         el.innerHTML = '';
 
-        cart.forEach((item, index) => {
+        cart.filter(item => item.title).forEach((item, index) => {
             const li = document.createElement('li');
             li.style.display = "flex";
             li.style.alignItems = "flex-end";
@@ -744,7 +762,12 @@ $mode = "Delivery";
 
     function updatePrice(cart) {
         const price = document.getElementById('price');
-        price.textContent = cart.map(item => (item.unit_price ?? 0) * (item.quantity ?? 0)).reduce((a, b) => a + b, 0).toFixed(2);
+        price.textContent = cart.filter(item => item.title)
+            .map(item => {
+                const itemPrice = (item.unit_price ?? 0) * (item.quantity ?? 0);
+                const optionsPrice = item.options?.map(option => option.price)?.reduce((a, b) => a + b, 0);
+                return (itemPrice ?? 0) + (optionsPrice ?? 0);
+            }).reduce((a, b) => a + b, 0).toFixed(2);
     }
 
     function removeOfCart(index) {
@@ -911,6 +934,18 @@ $mode = "Delivery";
                 _submitCart.removeAttribute('disabled');
             });
     }
+
+    const options = document.querySelectorAll('[data-option]');
+    options.forEach(option => {
+        option.addEventListener('change', (event) => {
+            event.stopPropagation();
+            let id = event.target.id;
+            const price = +event.target.getAttribute('data-option-price');
+            id = id.replace('option_', '');
+            const [optionId, productId] = id.split('_');
+            addToCart(+productId, null, null, { id: +optionId, checked: event.target.checked, price });
+        });
+    });
 
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC00WRtBgVw_2E2zJM0EwR9uiyW6uZ03bM&callback=initMap" async></script>

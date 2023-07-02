@@ -25,7 +25,7 @@ if($_POST){
                 <div class="gridProducts">
                 <?php foreach ($c["products"] as $product){
                    ?>
-                    <div class="products hoverable" onclick="addToCart(<?php echo $product["default"]["Info"]["id"] ?>, '<?php echo $product["default"]["Description"]["title"] ?>', <?php echo $mode == "delivery" ? $product["default"]["Prices"][0]["delivery_price"] : $product["default"]["Prices"][0]["store_price"] ?> )">
+                    <div class="products hoverable" style="position: relative">
                         <div class="contentProducts">
                             <h6><?php echo $product["default"]["Description"]["title"];?></h6>
                             <p class="pykmegreen">
@@ -104,9 +104,50 @@ if($_POST){
                                     }
                                 }?>
                             </p>
-                            
-                            
-                            
+                            <button class="btn" onclick="addToCart(<?php echo $product["default"]["Info"]["id"] ?>, '<?php echo $product["default"]["Description"]["title"] ?>', <?php echo $mode == "delivery" ? $product["default"]["Prices"][0]["delivery_price"] : $product["default"]["Prices"][0]["store_price"] ?> )">
+                                <?php echo $Core->Translator->translate("Add product"); ?>
+                            </button>
+                            <?php if(!empty($product["default"]["Options"])) { ?>
+                                <p style="position: relative; left: -1em;"><?php echo $Core->Translator->translate("Additional options"); ?></p>
+                                <ul class="collapsible" data-collapsible="accordion" style="position: relative; left: -1em; width: calc(100% + 2em);">
+                                    <?php foreach($product["default"]["Options"] as $bundle){ ?>
+                                        <li>
+                                            <div class="collapsible-header">
+                                                <span><?php echo $bundle["descriptions"]["title"] ?></span>
+                                            </div>
+                                            <div class="collapsible-body" style="display: flex; padding: .25em">
+                                                <ul class="collection">
+                                                    <?php foreach($bundle["hasOptions"] as $option){ ?>
+                                                        <li class="collection-item" style="border-bottom: 0;">
+                                                            <input
+                                                                type="checkbox"
+                                                                data-option
+                                                                data-option-price="<?php echo $option["prices"][0]["price"];?>"
+                                                                id="option_<?php echo $option["info"]["id"] ?>_<?php echo $product["default"]["Info"]["id"] ?>"
+                                                            />
+                                                            <label for="option_<?php echo $option["info"]["id"] ?>_<?php echo $product["default"]["Info"]["id"] ?>" style="display: flex; justify-content: space-between">
+                                                                <span><?php echo $option["description"][0]["title"]; ?></span>
+                                                                <div style="display: flex;">
+                                                                    <span>
+                                                                        <?php
+                                                                        $currency_id = $option["prices"][0]["currency_id"];
+                                                                        $key = array_search($currency_id,array_column($Core->currencies,"id"));
+                                                                        $currency = $Core->currencies[$key];
+                                                                        echo $currency["symbol"];
+                                                                        ?>
+                                                                    </span>
+                                                                    &nbsp;
+                                                                    <span><?php echo $option["prices"][0]["price"];?></span>
+                                                                </div>
+                                                            </label>
+                                                        </li>
+                                                    <?php } ?>
+                                                </ul>
+                                            </div>
+                                        </li>
+                                    <?php } ?>
+                                </ul>
+                            <?php } ?>
                         </div>       
                         <?php if(isset($product["default"]["Photos"])){?>
                         <div class="carousel carousel-slider">
@@ -132,6 +173,7 @@ $(document).ready(function(){
     $('.carousel.carousel-slider').carousel({
         fullWidth: true
     });
+    $('.modal').modal();
  });
 
  
