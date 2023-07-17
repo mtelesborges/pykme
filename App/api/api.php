@@ -136,6 +136,15 @@ class api{
 
             $db->query($sql, array("iiii", $orderId, $item["id"], $item["amount"], $item["quantity"]), true);
 
+            $productId = $db->insert_id;
+
+            $sql = <<<SQL
+                INSERT INTO orders_products_options(orders_products_id, product_option_id) VALUES(?, ?)
+            SQL;
+
+            foreach ($item["options"] as $option) {
+                $db->query($sql, array("ii", $productId, $option["id"]), true);
+            }
         }
 
         http_response_code(202);
@@ -405,7 +414,7 @@ class api{
                                     orders 	o
                         inner join 	shops 	s on s.id = o.shop_id
                     where
-                        o.driver_id is null
+                        o.driver_id = ? and o.status = 'CREATED'
                 )
                 select
                     *,
@@ -443,7 +452,7 @@ class api{
             order by distance limit 20
         SQL;
 
-        $deliveries = $db->query($sql, array("i", $vehicleId), false);
+        $deliveries = $db->query($sql, array("ii", $token->userId, $vehicleId), false);
 
         echo json_encode($deliveries ?? [], JSON_NUMERIC_CHECK);
     }
@@ -511,6 +520,7 @@ class api{
             set 
                 driver_id = (select id from drivers where user_id = ?),
                 vehicle_id = ?,
+                status = 'DRIVER_ACCEPTED',
                 delivery_started_at = CURRENT_TIMESTAMP
             where id = ?
         SQL;
@@ -626,7 +636,7 @@ class api{
         }
 
         $sql = <<<SQL
-            update orders set driver_id = null, delivery_started_at = null where id = ?
+            update orders set delivery_started_at = null, status = 'DRIVER_REJECTED' where id = ?
         SQL;
 
         $db->query($sql, array('i', $orderId), true);

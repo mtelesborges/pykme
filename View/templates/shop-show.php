@@ -150,34 +150,6 @@ $mode = "Delivery";
             <div class="col s12 sidebarShop">
                 <div class="row">
                     <form class="col s12" style="padding: 0" id="order">
-                        <div class="row" style="margin-bottom: 0">
-                            <div class="input-field col s12" style="padding: 0">
-                                <input id="street" name="street" type="text" class="validate" required>
-                                <label for="street">Street</label>
-                            </div>
-                        </div>
-                        <div class="row" style="margin-bottom: 0">
-                            <div class="input-field col s12" style="padding: 0">
-                                <input id="neighborhood" name="neighborhood" type="text" class="validate" required>
-                                <label for="neighborhood">Neighborhood</label>
-                            </div>
-                        </div>
-                        <div class="row" style="margin-bottom: 0">
-                            <div class="input-field col s6" style="padding: 0">
-                                <input id="zipCode" name="zipCode" type="text" class="validate" required>
-                                <label for="zipCode">Zip code</label>
-                            </div>
-                            <div class="input-field col s6" style="padding: 0">
-                                <input id="city" name="city" type="text" class="validate" required>
-                                <label for="city">City</label>
-                            </div>
-                        </div>
-                        <div class="row" style="margin-bottom: 0">
-                            <div class="input-field col s12" style="padding: 0">
-                                <input id="complement" name="complement" type="text" class="validate" required>
-                                <label for="complement">Complement</label>
-                            </div>
-                        </div>
                         <div class="row">
                             <p style="margin-bottom: 0;">
                                 <input class="with-gap" name="group1" type="radio" id="delivery" checked required/>
@@ -189,13 +161,43 @@ $mode = "Delivery";
                             </p>
                         </div>
                         <div class="row select-container-driver">
-                            <div class="input-field col s12">
+                            <div class="input-field col s12" style="padding: 0">
                                 <select id="driver">
                                     <option value="" disabled selected>Choose your option</option>
                                 </select>
                                 <label>Select a picker</label>
                             </div>
                         </div>
+                        <fieldset id="address">
+                            <div class="row" style="margin-bottom: 0">
+                                <div class="input-field col s12" style="padding: 0">
+                                    <input id="street" name="street" type="text" class="validate" required>
+                                    <label for="street">Street</label>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-bottom: 0">
+                                <div class="input-field col s12" style="padding: 0">
+                                    <input id="neighborhood" name="neighborhood" type="text" class="validate" required>
+                                    <label for="neighborhood">Neighborhood</label>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-bottom: 0">
+                                <div class="input-field col s6" style="padding: 0">
+                                    <input id="zipCode" name="zipCode" type="text" class="validate" required>
+                                    <label for="zipCode">Zip code</label>
+                                </div>
+                                <div class="input-field col s6" style="padding: 0">
+                                    <input id="city" name="city" type="text" class="validate" required>
+                                    <label for="city">City</label>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-bottom: 0">
+                                <div class="input-field col s12" style="padding: 0">
+                                    <input id="complement" name="complement" type="text" class="validate" required>
+                                    <label for="complement">Complement</label>
+                                </div>
+                            </div>
+                        </fieldset>
                     </form>
                 </div>
                 <h6><i class="material-icons left">shopping_cart</i><span style="display: flex; justify-content: space-between"><?php echo $Core->Translator->translate("Cart"); ?> <span id="price"></span></span></h6>
@@ -211,6 +213,7 @@ $mode = "Delivery";
                     </li>
                 </ul>
                 <div>
+                    <span style="float: left; margin-left: 0; display: none;" class="new badge gren" data-badge-caption="<?php echo $Core->Translator->translate("The order is created."); ?>" id="orderCreated"></span>
                     <span style="float: left; margin-left: 0; display: none;" class="new badge gren" data-badge-caption="<?php echo $Core->Translator->translate("The driver has accepted the order and is on his way to the store."); ?>" id="orderAccepted"></span>
                     <span style="float: left; margin-left: 0; display: none;" class="new badge red" data-badge-caption="<?php echo $Core->Translator->translate("The driver rejected the order, try with another one."); ?>" id="orderRejected"></span>
                 </div>
@@ -762,12 +765,14 @@ $mode = "Delivery";
 
     function updatePrice(cart) {
         const price = document.getElementById('price');
-        price.textContent = cart.filter(item => item.title)
+        price.textContent = cart
+            .filter(item => item.title)
             .map(item => {
                 const itemPrice = (item.unit_price ?? 0) * (item.quantity ?? 0);
                 const optionsPrice = item.options?.map(option => option.price)?.reduce((a, b) => a + b, 0);
                 return (itemPrice ?? 0) + (optionsPrice ?? 0);
-            }).reduce((a, b) => a + b, 0).toFixed(2);
+            }).reduce((a, b) => a + b, 0)
+            .toFixed(2);
     }
 
     function removeOfCart(index) {
@@ -821,20 +826,27 @@ $mode = "Delivery";
     document.getElementById("takeaway").addEventListener('change', function(_event) {
         _event.stopPropagation();
         const select = document.querySelector(".select-container-driver");
+        const address = document.getElementById('address');
         const display = _event.target.checked;
         if (display) {
-            fields['transportationType'] = 'TAKEWAY';
+            fields['transportationType'] = 'TAKEAWAY';
             select.style.display = 'none';
+            address.style.display = 'none';
+            _submitCart.removeAttribute('disabled');
         }
     })
 
     document.getElementById("delivery").addEventListener('change', function(_event) {
         _event.stopPropagation();
         const select = document.querySelector(".select-container-driver");
+        const address = document.getElementById('address');
         const display = _event.target.checked;
         if (display) {
             fields['transportationType'] = 'DELIVERY';
             select.style.display = 'block';
+            address.style.display = 'block';
+            const invalidFields = Object.values(fields).filter(field => !field).length;
+            invalidFields ?  _submitCart.setAttribute('disabled', '') : _submitCart.removeAttribute('disabled');
         }
     });
 
@@ -849,6 +861,7 @@ $mode = "Delivery";
 
     const _submitCart = document.getElementById('submitCart');
     const _loading = document.getElementById('loading');
+    const _orderCreated = document.getElementById('orderCreated');
     const _orderAccepted = document.getElementById('orderAccepted');
     const _orderRejected = document.getElementById('orderRejected');
 
@@ -882,24 +895,32 @@ $mode = "Delivery";
         });
 
     function submitCart() {
-        const cart = [];
-        document
-            .querySelectorAll('[data-cart-item]')
-            .forEach(item => {
-                const quantity = item.querySelector('[data-cart-item-quantity]').value;
-                const amount =  item.querySelector('[data-cart-item-amount]').getAttribute('data-cart-item-amount');
-                const _id = item.querySelector('[data-cart-item-id]').getAttribute('data-cart-item-id');
-                cart.push({quantity, amount, id: _id});
-            });
+        const CART_KEY = 'cart'
+        let cart = localStorage.getItem(CART_KEY);
+        const shopName = '<?php echo $shop["info"]["name"]; ?>';
+        cart = cart ? JSON.parse(cart) : {};
+        let currentCart = cart[shopName] ??= [];
+        currentCart = currentCart.map(product => {
+            product.price += (product?.options?.map(option => option.price)?.reduce((a, b) => a + b, 0) || 0);
+            return product;
+        });
 
         _submitCart.setAttribute('disabled', '');
+        _orderRejected.style.display = 'none';
+        _orderAccepted.style.display = 'none';
+        _orderCreated.style.display = 'none';
 
         fetch('/api/createOrder/', {
             method: 'POST',
-            body: JSON.stringify({cart, ...fields})
+            body: JSON.stringify({cart: currentCart, ...fields})
         })
             .then(async response => {
                 const data = await response.json();
+                console.log('[fields]', fields);
+                if (fields.transportationType === "TAKEAWAY") {
+                    _orderCreated.style.display = 'block';
+                    return;
+                }
                 _loading.style.display = 'flex';
                 const { order_id } = data;
                 let intervalCounter = 0;
